@@ -43,12 +43,16 @@ const GRUPOS = Object.keys(GROUPS);
 
 export default function App() {
   const { results, setScore, clearScore, applyPatch, resetAll } = useResults();
-  const { live: liveMap, finals, eventIds: liveEventIds } = useLive(MATCHES, GROUPS);
-  const seasonEventIds = useEventIds(MATCHES, GROUPS);
-  // IDs de evento para el detalle: eventsday (hoy, incluye live) + eventsseason.
+  const { live: liveMap, finals, eventIds: liveEventIds, kickoffs: liveKo } = useLive(MATCHES, GROUPS);
+  const season = useEventIds(MATCHES, GROUPS);
+  // IDs de evento + horarios reales: eventsday (hoy, incluye live) + eventsseason.
   const eventIds = useMemo(
-    () => ({ ...seasonEventIds, ...liveEventIds }),
-    [seasonEventIds, liveEventIds],
+    () => ({ ...season.ids, ...liveEventIds }),
+    [season, liveEventIds],
+  );
+  const kickoffs = useMemo(
+    () => ({ ...season.kickoffs, ...liveKo }),
+    [season, liveKo],
   );
   // Resultados efectivos: tus cargas pisan los finales de la API; ambos pisan
   // la semilla (manejada dentro de effResult). Los finales NO se persisten.
@@ -133,13 +137,13 @@ export default function App() {
     mode === "dense" ? (
       <div className="mrows">
         {list.map((m) => (
-          <MatchRow key={m.id} m={m} results={eff} liveMap={liveMap} onOpen={setEditId} />
+          <MatchRow key={m.id} m={m} results={eff} liveMap={liveMap} ko={kickoffs[m.id]} onOpen={setEditId} />
         ))}
       </div>
     ) : (
       <div className="tickets">
         {list.map((m) => (
-          <MatchCard key={m.id} m={m} results={eff} liveMap={liveMap} onOpen={setEditId} />
+          <MatchCard key={m.id} m={m} results={eff} liveMap={liveMap} ko={kickoffs[m.id]} onOpen={setEditId} />
         ))}
       </div>
     );
@@ -251,7 +255,7 @@ export default function App() {
             <a href="https://www.thesportsdb.com" target="_blank" rel="noopener">
               TheSportsDB
             </a>
-            . Horarios en tu hora local. Tocá un partido para cargar o editar su resultado.
+. Horarios reales (cuando hay cobertura) en tu hora local. Tocá un partido para ver el detalle o cargar su resultado.
           </p>
           <p className="credit">
             Desarrollado por{" "}
@@ -267,6 +271,7 @@ export default function App() {
         results={eff}
         userLoaded={editMatch ? hasUser(editMatch, results) : false}
         eventId={editMatch ? eventIds[editMatch.id] ?? null : null}
+        ko={editMatch ? kickoffs[editMatch.id] ?? editMatch.ko : ""}
         live={editMatch ? isLive(editMatch, eff, liveMap) : false}
         onSave={onSave}
         onClear={onClearScore}

@@ -19,6 +19,7 @@ export function Editor({
   results,
   userLoaded,
   eventId,
+  ko,
   live,
   onSave,
   onClear,
@@ -28,6 +29,7 @@ export function Editor({
   results: Results;
   userLoaded: boolean;
   eventId: string | null;
+  ko: string;
   live: boolean;
   onSave: (id: string, score: Score) => void;
   onClear: (id: string) => void;
@@ -114,7 +116,7 @@ export function Editor({
           {match.h} vs {match.a}
         </h2>
         <p className="ed-sub">
-          Grupo {match.g} · Fecha {match.f} · {localDateTime(match.ko)}
+          Grupo {match.g} · Fecha {match.f} · {localDateTime(ko || match.ko)}
         </p>
 
         <div className="ed-grid">

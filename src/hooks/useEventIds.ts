@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Match, Team } from "../types";
 import { makeNameMapper } from "../lib/names";
+import { toUtcIso } from "../lib/live";
 
 const URL = "https://www.thesportsdb.com/api/v1/json/123/eventsseason.php?id=4429&s=2026";
 
@@ -10,13 +11,19 @@ interface SeasonEvent {
   idEvent?: string;
   strHomeTeam?: string;
   strAwayTeam?: string;
+  strTimestamp?: string | null;
+}
+
+export interface SeasonInfo {
+  ids: Record<string, string>;
+  kickoffs: Record<string, string>;
 }
 
 export function useEventIds(
   matches: Match[],
   groups: Record<string, Team[]>,
-): Record<string, string> {
-  const [ids, setIds] = useState<Record<string, string>>({});
+): SeasonInfo {
+  const [info, setInfo] = useState<SeasonInfo>({ ids: {}, kickoffs: {} });
 
   useEffect(() => {
     let alive = true;
@@ -30,16 +37,19 @@ export function useEventIds(
         clearTimeout(timer);
         if (!alive || !data) return;
         const events: SeasonEvent[] = data.events || [];
-        const map: Record<string, string> = {};
+        const ids: Record<string, string> = {};
+        const kickoffs: Record<string, string> = {};
         for (const ev of events) {
-          if (!ev.idEvent) continue;
           const h = mapName(ev.strHomeTeam);
           const a = mapName(ev.strAwayTeam);
           if (!h || !a) continue;
           const m = matches.find((x) => x.h === h && x.a === a);
-          if (m) map[m.id] = ev.idEvent;
+          if (!m) continue;
+          if (ev.idEvent) ids[m.id] = ev.idEvent;
+          const ko = toUtcIso(ev.strTimestamp);
+          if (ko) kickoffs[m.id] = ko;
         }
-        setIds(map);
+        setInfo({ ids, kickoffs });
       })
       .catch(() => clearTimeout(timer));
 
@@ -50,5 +60,5 @@ export function useEventIds(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return ids;
+  return info;
 }

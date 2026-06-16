@@ -13,6 +13,15 @@ interface DayEvent {
   intAwayScore?: string | null;
   strStatus?: string | null;
   strSport?: string | null;
+  strTimestamp?: string | null;
+}
+
+// Normaliza el timestamp de TheSportsDB (UTC sin sufijo) a ISO con Z.
+export function toUtcIso(ts: string | null | undefined): string | null {
+  if (!ts) return null;
+  const s = ts.trim().replace(" ", "T");
+  if (!s) return null;
+  return /[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : s + "Z";
 }
 
 // Estados de "en juego" de TheSportsDB (normalizados a minúscula).
@@ -30,7 +39,8 @@ const FINISHED = new Set([
 export interface LiveFeed {
   live: LiveMap;     // partidos en juego ahora (con marcador en curso)
   finals: Results;   // partidos terminados (para rellenar pendientes)
-  eventIds: Record<string, string>; // matchId → idEvent (para el detalle)
+  eventIds: Record<string, string>;  // matchId → idEvent (para el detalle)
+  kickoffs: Record<string, string>;  // matchId → kickoff ISO UTC (hora real)
 }
 
 const API = "https://www.thesportsdb.com/api/v1/json/123/eventsday.php";
@@ -63,6 +73,7 @@ export async function fetchLive(
   const live: LiveMap = {};
   const finals: Results = {};
   const eventIds: Record<string, string> = {};
+  const kickoffs: Record<string, string> = {};
 
   const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
   const timer = setTimeout(() => ctrl?.abort(), 6000);
@@ -90,6 +101,8 @@ export async function fetchLive(
       const m = matches.find((x) => x.h === h && x.a === a);
       if (!m) continue;
       if (ev.idEvent) eventIds[m.id] = ev.idEvent; // detalle disponible para cualquier estado
+      const ko = toUtcIso(ev.strTimestamp);
+      if (ko) kickoffs[m.id] = ko; // hora real de inicio
       const status = (ev.strStatus || "").trim().toLowerCase();
       const inPlay = IN_PLAY.has(status);
       const done = FINISHED.has(status);
@@ -98,9 +111,9 @@ export async function fetchLive(
       else if (done && score) finals[m.id] = score;
     }
 
-    return { live, finals, eventIds };
+    return { live, finals, eventIds, kickoffs };
   } catch {
     clearTimeout(timer);
-    return { live: {}, finals: {}, eventIds: {} };
+    return { live: {}, finals: {}, eventIds: {}, kickoffs: {} };
   }
 }

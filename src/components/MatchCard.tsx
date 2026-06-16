@@ -8,13 +8,16 @@ export function MatchCard({
   m,
   results,
   liveMap,
+  ko,
   onOpen,
 }: {
   m: Match;
   results: Results;
   liveMap: LiveMap;
+  ko?: string;
   onOpen: (id: string) => void;
 }) {
+  const koUsed = ko || m.ko;
   const r = effResult(m, results);
   const live = isLive(m, results, liveMap);
   const liveScore = live ? liveMap[m.id] : null;
@@ -37,7 +40,7 @@ export function MatchCard({
           <span className="no">№ {serial}</span>
           <span className="dotrow" aria-hidden="true" />
           <span className="code">
-            GRP {m.g} · {localDate(m.ko)} · {localTime(m.ko)}
+            GRP {m.g} · {localDate(koUsed)} · {localTime(koUsed)}
           </span>
         </div>
         <span className="stampbox">
