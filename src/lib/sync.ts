@@ -48,9 +48,18 @@ export async function syncResults(
       const h = mapName(ev.strHomeTeam);
       const a = mapName(ev.strAwayTeam);
       if (!h || !a) continue;
-      const match = pending.find((m) => m.h === h && m.a === a);
-      if (!match) continue;
-      patch[match.id] = [parseInt(hs, 10), parseInt(as, 10)];
+      const hn = parseInt(hs, 10);
+      const an = parseInt(as, 10);
+      // Coincidencia en cualquier orden: la API puede tener el local/visitante
+      // invertido respecto de la semilla. Si está al revés, damos vuelta el
+      // marcador para respetar el local/visita de NUESTRO fixture.
+      const direct = pending.find((m) => m.h === h && m.a === a);
+      if (direct) {
+        patch[direct.id] = [hn, an];
+        continue;
+      }
+      const flip = pending.find((m) => m.h === a && m.a === h);
+      if (flip) patch[flip.id] = [an, hn];
     }
 
     return { filled: Object.keys(patch).length, patch, ok: true };

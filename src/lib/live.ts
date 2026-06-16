@@ -101,7 +101,15 @@ export async function fetchLive(
       const h = mapName(ev.strHomeTeam ?? undefined);
       const a = mapName(ev.strAwayTeam ?? undefined);
       if (!h || !a) continue;
-      const m = matches.find((x) => x.h === h && x.a === a);
+      // Coincidencia en cualquier orden: la API puede tener local/visitante
+      // invertido respecto de la semilla. Si está al revés, damos vuelta el
+      // marcador para respetar el local/visita de NUESTRO fixture.
+      let m = matches.find((x) => x.h === h && x.a === a);
+      let flipped = false;
+      if (!m) {
+        m = matches.find((x) => x.h === a && x.a === h);
+        flipped = true;
+      }
       if (!m) continue;
       if (ev.idEvent) eventIds[m.id] = ev.idEvent; // detalle disponible para cualquier estado
       const ko = toUtcIso(ev.strTimestamp);
@@ -109,7 +117,9 @@ export async function fetchLive(
       const status = (ev.strStatus || "").trim().toLowerCase();
       const inPlay = IN_PLAY.has(status);
       const done = FINISHED.has(status);
-      const score = parseScore(ev.intHomeScore, ev.intAwayScore);
+      const raw = parseScore(ev.intHomeScore, ev.intAwayScore);
+      const score: Score | null =
+        raw && flipped ? [raw[1], raw[0]] : raw;
       if (inPlay) {
         live[m.id] = score;
         const p = (ev.strProgress || "").trim();
