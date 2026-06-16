@@ -1,4 +1,5 @@
 import type { TrackerStats } from "../types";
+import { useCountUp } from "../hooks/useCountUp";
 
 export function Header({
   stats,
@@ -7,8 +8,15 @@ export function Header({
   stats: TrackerStats;
   liveCount: number;
 }) {
+  const winners = useCountUp(stats.winners);
+  const played = useCountUp(stats.played);
+  const exacts = useCountUp(stats.exacts);
+  const pct = useCountUp(stats.pct);
+
   return (
     <header className="top">
+      <span className="cropmark tl" aria-hidden="true" />
+      <span className="cropmark tr" aria-hidden="true" />
       <div className="wrap">
         <div className="kicker">
           <span className="badge">Prode · modelo Montecarlo</span>
@@ -18,15 +26,24 @@ export function Header({
               {liveCount} en vivo
             </span>
           )}
+          <span className="edition" aria-hidden="true">
+            Ed. №01 · matchday
+          </span>
         </div>
+
         <h1>
-          <span className="out">Mundial</span> <span className="yr">26</span>
+          <span className="out">Mundial</span>{" "}
+          <span className="yr">
+            26
+            <span className="stamp" aria-hidden="true">
+              fase de grupos
+            </span>
+          </span>
         </h1>
         <p className="sub">
-          <b>Fase de grupos</b>
-          <span className="sep">·</span>72 partidos
-          <span className="sep">·</span>12 grupos
-          <span className="sep">·</span>
+          <b>72 partidos</b>
+          <span className="sep">/</span>12 grupos
+          <span className="sep">/</span>
           <b>USA · Canadá · México</b>
         </p>
 
@@ -34,20 +51,20 @@ export function Header({
           <div className="stat">
             <div className="k">Ganadores</div>
             <div className="v">
-              {stats.winners}
-              <small>/{stats.played}</small>
+              {winners}
+              <small>/{played}</small>
             </div>
             <div className="spark">acertados</div>
           </div>
           <div className="stat">
             <div className="k">Exactos</div>
-            <div className="v">{stats.exacts}</div>
+            <div className="v">{exacts}</div>
             <div className="spark">marcador</div>
           </div>
           <div className="stat accent">
             <div className="k">Aciertos</div>
             <div className="v">
-              {stats.pct}
+              {pct}
               <small>%</small>
             </div>
             <div className="spark">corriente</div>

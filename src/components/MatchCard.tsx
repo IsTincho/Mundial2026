@@ -21,6 +21,7 @@ export function MatchCard({
   const conf = typeof m.c === "number" ? m.c : 0;
   const pct = Math.max(0, Math.min(100, conf * 10));
   const lowConf = conf < 6;
+  const serial = String(m.n).padStart(3, "0");
 
   return (
     <button
@@ -30,12 +31,21 @@ export function MatchCard({
       aria-label={`${m.h} contra ${m.a}, grupo ${m.g}, fecha ${m.f}. Tocá para cargar el resultado.`}
     >
       <div className="crow">
-        <div className="tags">
-          <span className="tag g">Grupo {m.g}</span>
-          <span className="tag">Fecha {m.f}</span>
-          <span className="tag">{fmtDate(m.d)}</span>
+        <div className="serial">
+          <span className="no">№ {serial}</span>
+          <span className="dotrow" aria-hidden="true" />
+          <span className="code">
+            GRP·{m.g} / F{m.f} / {fmtDate(m.d)}
+          </span>
         </div>
-        <VerdictTag v={vd} />
+        <span className="stampbox">
+          <VerdictTag v={vd} />
+        </span>
+      </div>
+
+      <div className="perf" aria-hidden="true">
+        <span className="notch l" />
+        <span className="notch r" />
       </div>
 
       <div className="match">
@@ -47,7 +57,7 @@ export function MatchCard({
           <div className="scores">
             <div className="scell pred">
               <div className="lab">Prode</div>
-              <div className="num">
+              <div className="num flip">
                 {m.p[0]}:{m.p[1]}
               </div>
             </div>
@@ -63,7 +73,7 @@ export function MatchCard({
             ) : (
               <div className="scell real">
                 <div className="lab">Real</div>
-                <div className={"num" + (r ? "" : " pend")}>
+                <div className={"num flip" + (r ? "" : " pend")}>
                   {r ? `${r[0]}:${r[1]}` : "–:–"}
                 </div>
               </div>
@@ -80,9 +90,10 @@ export function MatchCard({
         <span className="cl">Conf</span>
         <span className="track">
           <span className="fill" style={{ width: pct + "%" }} />
+          <span className="ticks" aria-hidden="true" />
         </span>
         <span className="cv">{conf.toFixed(1)}</span>
-        {lowConf && <span className="hintlow">↓ candidato a empate</span>}
+        {lowConf && <span className="hintlow">¿empate?</span>}
       </div>
     </button>
   );

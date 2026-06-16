@@ -48,7 +48,7 @@ export const CONFED: Record<string, string> = {
 // Confederaciones presentes, en orden de cantidad de equipos.
 export const CONFEDS = ["UEFA", "CAF", "AFC", "CONMEBOL", "CONCACAF", "OFC"] as const;
 
-type RawMatch = Omit<Match, "id">;
+type RawMatch = Omit<Match, "id" | "n">;
 
 const RAW: RawMatch[] = [
   // ---- Grupo A ----
@@ -148,10 +148,20 @@ const RAW: RawMatch[] = [
   { g: "L", f: 3, d: "2026-06-27", h: "Croacia", a: "Ghana", p: [1, 0], c: 6.5, r: null },
 ];
 
-// id estable por partido: "G-F-Local-Visita".
-export const MATCHES: Match[] = RAW.map((m) => ({
+// id estable por partido + número de serie (1..72) por orden de calendario.
+const ORDER = RAW.map((m, i) => ({ m, i })).sort(
+  (a, b) =>
+    (a.m.d < b.m.d ? -1 : a.m.d > b.m.d ? 1 : 0) ||
+    (a.m.g < b.m.g ? -1 : a.m.g > b.m.g ? 1 : 0) ||
+    a.i - b.i,
+);
+const SERIAL = new Map<number, number>();
+ORDER.forEach((x, idx) => SERIAL.set(x.i, idx + 1));
+
+export const MATCHES: Match[] = RAW.map((m, i) => ({
   ...m,
   id: `${m.g}-${m.f}-${m.h}-${m.a}`,
+  n: SERIAL.get(i) ?? i + 1,
 }));
 
 // Ranking mundial por equipo (de GROUPS), para mostrarlo en las tarjetas.
