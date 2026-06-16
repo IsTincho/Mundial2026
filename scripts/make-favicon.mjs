@@ -45,7 +45,7 @@ const seams = vertDirs
 
 const ink = "#0B0B0D";
 const white = "#F4F4F2";
-const cyan = "#4DE2F0";
+const ring = "#3FE06B";
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
   <defs><clipPath id="ball"><circle cx="${C}" cy="${C}" r="${BALL_R}"/></clipPath></defs>
@@ -56,7 +56,7 @@ const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width
     <g stroke="${ink}" stroke-width="2.4" stroke-linecap="round">${seams}</g>
   </g>
   <circle cx="${C}" cy="${C}" r="${BALL_R}" fill="none" stroke="${ink}" stroke-width="3"/>
-  <circle cx="${C}" cy="${C}" r="${BALL_R + 2.5}" fill="none" stroke="${cyan}" stroke-width="2.5"/>
+  <circle cx="${C}" cy="${C}" r="${BALL_R + 2.5}" fill="none" stroke="${ring}" stroke-width="2.5"/>
 </svg>`;
 
 writeFileSync(join(root, "public/favicon.svg"), svg);
