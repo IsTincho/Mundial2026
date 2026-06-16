@@ -65,7 +65,7 @@ export const CODE: Record<string, string> = {
   "Inglaterra": "gb-eng", "Croacia": "hr", "Panamá": "pa", "Ghana": "gh",
 };
 
-type RawMatch = Omit<Match, "id" | "n">;
+type RawMatch = Omit<Match, "id" | "n" | "ko">;
 
 const RAW: RawMatch[] = [
   // ---- Grupo A ----
@@ -175,10 +175,28 @@ const ORDER = RAW.map((m, i) => ({ m, i })).sort(
 const SERIAL = new Map<number, number>();
 ORDER.forEach((x, idx) => SERIAL.set(x.i, idx + 1));
 
+// Kickoff por partido: slots tipo US Eastern (EDT, UTC-4 en junio). Son
+// horarios representativos (dato semilla); se muestran en la zona del usuario.
+const SLOTS_ET = [12, 15, 18, 21];
+const KO = new Map<number, string>();
+{
+  const byDate: Record<string, number[]> = {};
+  RAW.forEach((m, i) => { (byDate[m.d] ||= []).push(i); });
+  for (const d of Object.keys(byDate)) {
+    byDate[d]
+      .sort((a, b) => (RAW[a].g < RAW[b].g ? -1 : RAW[a].g > RAW[b].g ? 1 : a - b))
+      .forEach((idx, j) => {
+        const h = String(SLOTS_ET[j % SLOTS_ET.length]).padStart(2, "0");
+        KO.set(idx, `${d}T${h}:00:00-04:00`);
+      });
+  }
+}
+
 export const MATCHES: Match[] = RAW.map((m, i) => ({
   ...m,
   id: `${m.g}-${m.f}-${m.h}-${m.a}`,
   n: SERIAL.get(i) ?? i + 1,
+  ko: KO.get(i) ?? `${m.d}T18:00:00-04:00`,
 }));
 
 // Ranking mundial por equipo (de GROUPS), para mostrarlo en las tarjetas.

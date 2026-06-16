@@ -1,5 +1,5 @@
 import type { LiveMap, Match, Results } from "../types";
-import { effResult, isLive, verdict } from "../lib/logic";
+import { effResult, isLive, localTime, verdict } from "../lib/logic";
 import { Flag } from "./Flag";
 
 export function MatchRow({
@@ -32,7 +32,7 @@ export function MatchRow({
         <span>{m.a}</span>
         <Flag team={m.a} size="sm" />
       </span>
-      <span className="gtag">{m.g}·F{m.f}</span>
+      <span className="gtag">{m.g} · {localTime(m.ko)}</span>
       <span className="sc">
         <span className="p">
           {m.p[0]}:{m.p[1]}

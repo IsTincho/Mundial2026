@@ -132,13 +132,45 @@ export function playedCount(list: Match[], results: Results): number {
 
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
-// Split manual del ISO: evita corrimientos por zona horaria.
+// Split manual del ISO (fecha sola, sin hora): evita corrimientos de zona.
 export function fmtDate(iso: string): string {
   const p = String(iso).split("-");
   if (p.length !== 3) return iso;
   const dia = parseInt(p[2], 10);
   const mes = parseInt(p[1], 10) - 1;
   return dia + " " + (MESES[mes] || "");
+}
+
+// Formato en la zona horaria del usuario (Intl usa la local por defecto).
+const fmtLocalDate = new Intl.DateTimeFormat("es-AR", { day: "numeric", month: "short" });
+const fmtLocalDateFull = new Intl.DateTimeFormat("es-AR", { weekday: "short", day: "numeric", month: "short" });
+const fmtLocalTime = new Intl.DateTimeFormat("es-AR", { hour: "2-digit", minute: "2-digit", hour12: false });
+
+// Fecha local corta, ej "12 jun" (compacta, para las tarjetas).
+export function localDate(ko: string): string {
+  const dt = new Date(ko);
+  if (Number.isNaN(dt.getTime())) return ko;
+  return fmtLocalDate.format(dt).replace(/\.$/, "");
+}
+
+// Fecha local con día de semana, ej "vie 12 jun" (para el editor).
+export function localDateFull(ko: string): string {
+  const dt = new Date(ko);
+  if (Number.isNaN(dt.getTime())) return ko;
+  return fmtLocalDateFull.format(dt).replace(/\.$/, "");
+}
+
+// Hora local del kickoff, ej "19:00".
+export function localTime(ko: string): string {
+  const dt = new Date(ko);
+  if (Number.isNaN(dt.getTime())) return "";
+  return fmtLocalTime.format(dt);
+}
+
+// Fecha (con día) + hora local, ej "vie 12 jun · 19:00".
+export function localDateTime(ko: string): string {
+  const t = localTime(ko);
+  return t ? `${localDateFull(ko)} · ${t}` : localDateFull(ko);
 }
 
 export function byDateThenGroup(a: Match, b: Match): number {

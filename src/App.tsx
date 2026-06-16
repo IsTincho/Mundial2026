@@ -244,7 +244,7 @@ export default function App() {
             <a href="https://www.thesportsdb.com" target="_blank" rel="noopener">
               TheSportsDB
             </a>
-            . Tocá un partido para cargar o editar su resultado.
+            . Horarios en tu hora local. Tocá un partido para cargar o editar su resultado.
           </p>
           <p className="credit">
             Desarrollado por{" "}

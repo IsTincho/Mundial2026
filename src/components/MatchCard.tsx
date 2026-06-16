@@ -1,6 +1,6 @@
 import type { LiveMap, Match, Results } from "../types";
 import { teamMeta } from "../data";
-import { effResult, fmtDate, isLive, verdict } from "../lib/logic";
+import { effResult, isLive, localDate, localTime, verdict } from "../lib/logic";
 import { VerdictTag } from "./Score";
 import { Flag, VsCrest } from "./Flag";
 
@@ -37,7 +37,7 @@ export function MatchCard({
           <span className="no">№ {serial}</span>
           <span className="dotrow" aria-hidden="true" />
           <span className="code">
-            GRP·{m.g} / F{m.f} / {fmtDate(m.d)}
+            GRP {m.g} · {localDate(m.ko)} · {localTime(m.ko)}
           </span>
         </div>
         <span className="stampbox">

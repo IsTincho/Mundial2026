@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Match, Results, Score } from "../types";
-import { effResult, fmtDate } from "../lib/logic";
+import { effResult, localDateTime } from "../lib/logic";
 
 function parseScore(hs: string, as: string): Score | null {
   const h = hs.trim();
@@ -109,7 +109,7 @@ export function Editor({
           {match.h} vs {match.a}
         </h2>
         <p className="ed-sub">
-          Grupo {match.g} · Fecha {match.f} · {fmtDate(match.d)}
+          Grupo {match.g} · Fecha {match.f} · {localDateTime(match.ko)}
         </p>
 
         <div className="ed-grid">
