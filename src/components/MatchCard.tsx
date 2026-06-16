@@ -2,7 +2,7 @@ import type { LiveMap, Match, Results } from "../types";
 import { teamMeta } from "../data";
 import { effResult, fmtDate, isLive, verdict } from "../lib/logic";
 import { VerdictTag } from "./Score";
-import { Flag } from "./Flag";
+import { Flag, VsCrest } from "./Flag";
 
 export function MatchCard({
   m,
@@ -31,8 +31,8 @@ export function MatchCard({
       onClick={() => onOpen(m.id)}
       aria-label={`${m.h} contra ${m.a}, grupo ${m.g}, fecha ${m.f}. Tocá para cargar el resultado.`}
     >
-      <span className="foil" aria-hidden="true" />
       <div className="crow">
+        <VsCrest home={m.h} away={m.a} />
         <div className="serial">
           <span className="no">№ {serial}</span>
           <span className="dotrow" aria-hidden="true" />

@@ -240,11 +240,17 @@ export default function App() {
           </div>
           <p className="meta">
             Datos al {fmtDate(UPDATED)} · predicciones modelo Montecarlo · resultados
-            en vivo (beta) vía{" "}
+            en vivo vía{" "}
             <a href="https://www.thesportsdb.com" target="_blank" rel="noopener">
               TheSportsDB
             </a>
             . Tocá un partido para cargar o editar su resultado.
+          </p>
+          <p className="credit">
+            Desarrollado por{" "}
+            <a href="https://github.com/IsTincho" target="_blank" rel="noopener">
+              IsTincho
+            </a>
           </p>
         </div>
       </footer>

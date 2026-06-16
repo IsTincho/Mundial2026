@@ -293,6 +293,9 @@ section { margin-bottom: 26px; }
 .foot .meta { color: var(--dim); font-family: var(--mono); font-size: 10.5px; line-height: 1.7; }
 .foot .meta a { color: var(--accent); text-decoration: none; }
 .foot .meta a:hover { text-decoration: underline; }
+.foot .credit { margin: 14px 0 0; font-family: var(--display); font-size: 14px; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.foot .credit a { color: var(--accent); text-decoration: none; }
+.foot .credit a:hover { text-decoration: underline; }
 
 /* ============================ DIALOG ============================ */
 dialog#editor { border: 1px solid var(--line-2); border-radius: 18px; padding: 0; background: var(--surface); color: var(--text); width: min(430px, 93vw); box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
@@ -442,16 +445,14 @@ dialog#editor::backdrop { background: rgba(5, 6, 8, .74); backdrop-filter: blur(
 .tr .tm .nm { display: flex; align-items: center; gap: 8px; }
 .bteam .nm { min-width: 0; }
 
-/* Esquina foil (sticker de álbum) — reemplaza el viejo stripe de color */
-.foil {
-  position: absolute; top: 0; left: 0; width: 38px; height: 38px; z-index: 2; pointer-events: none;
-  clip-path: polygon(0 0, 100% 0, 0 100%);
-  background: conic-gradient(from 210deg at 32% 30%, #ff4d6d, #ffc24b, #4de2f0, #5be08a, #b07dff, #ff4d6d);
-  opacity: .34; mix-blend-mode: screen;
-}
-.foil::after { content: ""; position: absolute; top: 0; left: 0; width: 38px; height: 38px; clip-path: polygon(0 0, 100% 0, 0 100%); border-top: 1px solid rgba(255, 255, 255, .18); }
-.card.v-exact .foil { opacity: .6; }
-.card.v-winner .foil { opacity: .46; }
+/* Escudo de cruce: círculo partido en diagonal, mitad local / mitad visita */
+.vscrest { position: relative; width: 34px; height: 34px; border-radius: 50%; overflow: hidden; flex: 0 0 auto; box-shadow: 0 0 0 1.5px var(--line-2), 0 1px 4px rgba(0, 0, 0, .55); }
+.vscrest .h, .vscrest .a { position: absolute; inset: 0; width: 100%; height: 100%; background-size: cover; background-position: center; }
+.vscrest .h { clip-path: polygon(0 0, 108% 0, 0 108%); }
+.vscrest .a { clip-path: polygon(100% -8%, 100% 100%, -8% 100%); }
+.vscrest .nofl { background: var(--surface-2); }
+.vscrest .div { position: absolute; inset: 0; background: linear-gradient(to bottom right, transparent calc(50% - .9px), rgba(255, 255, 255, .65) 50%, transparent calc(50% + .9px)); }
+.card:hover .vscrest { box-shadow: 0 0 0 1.5px var(--accent), 0 1px 6px rgba(0, 0, 0, .6); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }

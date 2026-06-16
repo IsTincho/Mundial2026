@@ -16,3 +16,16 @@ export function Flag({ team, size = "md" }: { team: string; size?: "sm" | "md" |
     />
   );
 }
+
+// Escudo de cruce: círculo partido en diagonal, mitad local / mitad visita.
+export function VsCrest({ home, away }: { home: string; away: string }) {
+  const hc = CODE[home];
+  const ac = CODE[away];
+  return (
+    <span className="vscrest" role="img" aria-label={`${home} vs ${away}`}>
+      <span className={"h " + (hc ? "fi fi-" + hc : "nofl")} />
+      <span className={"a " + (ac ? "fi fi-" + ac : "nofl")} />
+      <span className="div" aria-hidden="true" />
+    </span>
+  );
+}
