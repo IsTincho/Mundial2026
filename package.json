@@ -1,0 +1,26 @@
+{
+  "name": "mundial2026-prode",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Prode + fixture del Mundial 2026 (fase de grupos). React + Vite + TypeScript.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=mundial2026"
+  },
+  "dependencies": {
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.21",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "typescript": "^5.7.3",
+    "vite": "^7.3.5",
+    "wrangler": "^4.0.0"
+  }
+}
