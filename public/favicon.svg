@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs><clipPath id="ball"><circle cx="50" cy="50" r="44"/></clipPath></defs>
+  <circle cx="50" cy="50" r="44" fill="#F4F4F2"/>
+  <g clip-path="url(#ball)">
+    <path d="M50.00 35.00L64.27 45.36L58.82 62.14L41.18 62.14L35.73 45.36Z" fill="#0B0B0D"/>
+    <path d="M78.80 10.36L83.16 23.77L71.75 32.07L60.34 23.77L64.69 10.36Z" fill="#0B0B0D"/>
+    <path d="M96.60 65.14L85.19 73.43L73.78 65.14L78.14 51.73L92.24 51.73Z" fill="#0B0B0D"/>
+    <path d="M50.00 99.00L38.59 90.71L42.95 77.29L57.05 77.29L61.41 90.71Z" fill="#0B0B0D"/>
+    <path d="M3.40 65.14L7.76 51.73L21.86 51.73L26.22 65.14L14.81 73.43Z" fill="#0B0B0D"/>
+    <path d="M21.20 10.36L35.31 10.36L39.66 23.77L28.25 32.07L16.84 23.77Z" fill="#0B0B0D"/>
+    <g stroke="#0B0B0D" stroke-width="2.4" stroke-linecap="round"><line x1="50.00" y1="35.00" x2="50.00" y2="6.00"/><line x1="64.27" y1="45.36" x2="91.85" y2="36.40"/><line x1="58.82" y1="62.14" x2="75.86" y2="85.60"/><line x1="41.18" y1="62.14" x2="24.14" y2="85.60"/><line x1="35.73" y1="45.36" x2="8.15" y2="36.40"/></g>
+  </g>
+  <circle cx="50" cy="50" r="44" fill="none" stroke="#0B0B0D" stroke-width="3"/>
+  <circle cx="50" cy="50" r="46.5" fill="none" stroke="#4DE2F0" stroke-width="2.5"/>
+</svg>
