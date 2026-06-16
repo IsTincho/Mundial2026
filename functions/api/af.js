@@ -68,33 +68,51 @@ export async function onRequestGet({ request, env }) {
   const kind = url.searchParams.get("kind");
 
   try {
-    // Diagnóstico temporal: plan de la cuenta + qué trae league=1/season=2026
-    // y, de paso, qué temporadas tiene disponibles la liga 1 (World Cup).
+    // Diagnóstico temporal (sin datos personales): plan de API-Football y,
+    // sobre todo, si la fuente GRATIS (TheSportsDB) trae el Mundial 2026.
     if (kind === "diag") {
       const out = {};
       try {
         const st = await af(`/status`, key, 5);
-        out.account = st.response || st.errors || st;
-      } catch (e) { out.account = String(e); }
+        out.api_football = {
+          plan: st.response?.subscription?.plan,
+          active: st.response?.subscription?.active,
+          requests: st.response?.requests,
+        };
+      } catch (e) { out.api_football = String(e); }
       try {
         const fx = await af(`/fixtures?league=${LEAGUE}&season=${SEASON}`, key, 5);
-        out.fixtures = {
-          results: fx.results,
-          errors: fx.errors,
-          sample: (fx.response || []).slice(0, 3).map((r) => ({
-            h: r.teams?.home?.name,
-            a: r.teams?.away?.name,
-            st: r.fixture?.status?.short,
-            date: r.fixture?.date,
+        out.api_football_2026 = { results: fx.results, errors: fx.errors };
+      } catch (e) { out.api_football_2026 = String(e); }
+
+      const SDB = "https://www.thesportsdb.com/api/v1/json/123";
+      try {
+        const r = await fetch(`${SDB}/eventsseason.php?id=4429&s=2026`).then((x) => x.json());
+        const evs = r.events || [];
+        out.thesportsdb_season = {
+          count: evs.length,
+          withScore: evs.filter((e) => e.intHomeScore != null && e.intHomeScore !== "").length,
+          sample: evs.slice(0, 3).map((e) => ({
+            h: e.strHomeTeam, a: e.strAwayTeam,
+            hs: e.intHomeScore, as: e.intAwayScore,
+            st: e.strStatus, d: e.dateEvent,
           })),
         };
-      } catch (e) { out.fixtures = String(e); }
+      } catch (e) { out.thesportsdb_season = String(e); }
+
+      const today = new Date().toISOString().slice(0, 10);
       try {
-        const lg = await af(`/leagues?id=${LEAGUE}`, key, 5);
-        const seasons = lg.response?.[0]?.seasons || [];
-        out.seasons_available = seasons.map((s) => s.year);
-        out.leagues_errors = lg.errors;
-      } catch (e) { out.seasons = String(e); }
+        const r = await fetch(`${SDB}/eventsday.php?d=${today}&s=Soccer`).then((x) => x.json());
+        const evs = r.events || [];
+        out.thesportsdb_today = {
+          total_soccer: evs.length,
+          worldcup: evs
+            .filter((e) => /world cup/i.test(e.strLeague || ""))
+            .slice(0, 8)
+            .map((e) => ({ h: e.strHomeTeam, a: e.strAwayTeam, st: e.strStatus, league: e.strLeague })),
+        };
+      } catch (e) { out.thesportsdb_today = String(e); }
+
       return json(out);
     }
 
