@@ -68,6 +68,36 @@ export async function onRequestGet({ request, env }) {
   const kind = url.searchParams.get("kind");
 
   try {
+    // Diagnóstico temporal: plan de la cuenta + qué trae league=1/season=2026
+    // y, de paso, qué temporadas tiene disponibles la liga 1 (World Cup).
+    if (kind === "diag") {
+      const out = {};
+      try {
+        const st = await af(`/status`, key, 5);
+        out.account = st.response || st.errors || st;
+      } catch (e) { out.account = String(e); }
+      try {
+        const fx = await af(`/fixtures?league=${LEAGUE}&season=${SEASON}`, key, 5);
+        out.fixtures = {
+          results: fx.results,
+          errors: fx.errors,
+          sample: (fx.response || []).slice(0, 3).map((r) => ({
+            h: r.teams?.home?.name,
+            a: r.teams?.away?.name,
+            st: r.fixture?.status?.short,
+            date: r.fixture?.date,
+          })),
+        };
+      } catch (e) { out.fixtures = String(e); }
+      try {
+        const lg = await af(`/leagues?id=${LEAGUE}`, key, 5);
+        const seasons = lg.response?.[0]?.seasons || [];
+        out.seasons_available = seasons.map((s) => s.year);
+        out.leagues_errors = lg.errors;
+      } catch (e) { out.seasons = String(e); }
+      return json(out);
+    }
+
     if (kind === "live") {
       const data = await af(`/fixtures?live=all&league=${LEAGUE}&season=${SEASON}`, key);
       const matches = (data.response || []).map((r) => ({
