@@ -194,6 +194,10 @@ h1 .yr { color: var(--accent); }
 .scell.real .num { color: var(--text); }
 .scell.real .num.pend { color: var(--dim); }
 .scell.live .num { color: var(--live); font-size: 11px; font-weight: 800; padding-top: 7px; letter-spacing: .06em; }
+.scell.live .lab { display: flex; align-items: center; justify-content: center; gap: 5px; color: var(--live); }
+.scell.live .lab .livedot { width: 6px; height: 6px; border-radius: 50%; background: var(--live); box-shadow: 0 0 8px var(--live); animation: pulse 1.3s ease-in-out infinite; }
+.scell.live .num.livescore { color: var(--live); font-size: clamp(20px, 6.5vw, 26px); padding-top: 0; letter-spacing: .03em; }
+.scell.live .num.waiting { color: var(--live); font-size: 18px; letter-spacing: .12em; padding-top: 4px; }
 
 .conf { display: flex; align-items: center; gap: 9px; margin-top: 14px; }
 .conf .cl { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); flex: 0 0 auto; }

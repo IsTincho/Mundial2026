@@ -46,6 +46,10 @@ export interface Filters {
 // Cargas manuales del usuario: { matchId: [local, visita] }.
 export type Results = Record<string, Score>;
 
+// Partidos en vivo según la API: presencia de la clave = en juego.
+// El valor es el marcador actual (o null si la API aún no lo da).
+export type LiveMap = Record<string, Score | null>;
+
 export interface Standing {
   name: string;
   rank: number;

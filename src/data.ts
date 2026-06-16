@@ -101,7 +101,7 @@ const RAW: RawMatch[] = [
 
   // ---- Grupo G ----
   { g: "G", f: 1, d: "2026-06-15", h: "Bélgica", a: "Egipto", p: [1, 0], c: 6.3, r: [1, 1] },
-  { g: "G", f: 1, d: "2026-06-15", h: "Irán", a: "Nueva Zelanda", p: [2, 0], c: 7.7, r: null, live: true },
+  { g: "G", f: 1, d: "2026-06-15", h: "Irán", a: "Nueva Zelanda", p: [2, 0], c: 7.7, r: null },
   { g: "G", f: 2, d: "2026-06-21", h: "Bélgica", a: "Irán", p: [1, 0], c: 5.3, r: null },
   { g: "G", f: 2, d: "2026-06-21", h: "Nueva Zelanda", a: "Egipto", p: [0, 2], c: 6.8, r: null },
   { g: "G", f: 3, d: "2026-06-27", h: "Nueva Zelanda", a: "Bélgica", p: [0, 2], c: 7.9, r: null },

@@ -39,18 +39,22 @@ Para corregir o deshacer:
 
 Tus cargas se guardan en `localStorage` bajo la clave `prode2026:results` (un mapa `id de partido → [goles local, goles visita]`). El estado en memoria es el que manda para dibujar; el `localStorage` es solo persistencia y está envuelto en `try/catch`, así que si el navegador lo bloquea la app sigue andando igual (sin recordar entre sesiones).
 
-## Resultados en vivo (API opcional, beta)
+## Resultados en vivo (TheSportsDB, sin backend)
 
-El botón **"Buscar resultados (beta)"** intenta autocompletar partidos **pendientes** desde [TheSportsDB](https://www.thesportsdb.com) (con la *test key* pública `123`). Es una mejora progresiva, no una dependencia:
+La app **se conecta sola** a [TheSportsDB](https://www.thesportsdb.com) (con la *test key* pública `123`, sin backend ni claves propias) y refresca cada ~45 s:
 
-- **Nunca** pisa un resultado semilla ni una carga tuya: solo rellena partidos sin resultado.
-- Tiene timeout y **cae en silencio** a la carga manual si la red falla o la cobertura del torneo no está disponible.
-- La cobertura del Mundial 2026 en la API puede no ser confiable; tomalo como experimental.
+- **En vivo real**: lee `strStatus` de los partidos del día. El chip "En vivo" aparece **solo si la API dice que el partido está en juego**, con su marcador en curso. (Ya no hay un flag "en vivo" hardcodeado.)
+- **Finales automáticos**: cuando un partido termina, su marcador final rellena el partido **si estaba pendiente** — así la transición en-vivo → final no se pierde.
+- **Nunca pisa** un resultado semilla ni una carga tuya, y **no persiste** en `localStorage`: es una capa de solo-lectura por encima de tus datos.
+- Tiene timeout y **cae en silencio** si la red falla o el torneo no tiene cobertura (queda Pendiente).
+- El botón **"Buscar resultados (beta)"** sigue disponible para forzar un autocompletado puntual de pendientes.
+
+> La cobertura del Mundial 2026 en la API puede variar; la app degrada con elegancia si no hay datos.
 
 ## Stack
 
-- **React 19 + Vite 6 + TypeScript** (build estático, sin servidor).
-- Sin dependencias de UI: estilos en CSS plano (`src/styles.css`).
+- **React 19 + Vite 7 + TypeScript** (build estático, sin servidor).
+- Sin dependencias de UI: estilos en CSS plano (`src/styles.css`). Fuentes self-hosted (`@fontsource`).
 - Mobile-first (pensado para ~390 px), foco de teclado visible y respeta `prefers-reduced-motion`.
 - Diseño con concepto de **tablero de estadio de noche**: marcadores en numerales ámbar tipo dot-matrix y chips de veredicto de colores; el resto, sobrio.
 

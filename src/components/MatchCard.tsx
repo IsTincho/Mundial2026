@@ -1,4 +1,4 @@
-import type { Match, Results } from "../types";
+import type { LiveMap, Match, Results } from "../types";
 import { teamMeta } from "../data";
 import { effResult, fmtDate, isLive, verdict } from "../lib/logic";
 import { VerdictTag } from "./Score";
@@ -6,15 +6,18 @@ import { VerdictTag } from "./Score";
 export function MatchCard({
   m,
   results,
+  liveMap,
   onOpen,
 }: {
   m: Match;
   results: Results;
+  liveMap: LiveMap;
   onOpen: (id: string) => void;
 }) {
   const r = effResult(m, results);
-  const live = isLive(m, results);
-  const vd = verdict(m, results);
+  const live = isLive(m, results, liveMap);
+  const liveScore = live ? liveMap[m.id] : null;
+  const vd = verdict(m, results, liveMap);
   const conf = typeof m.c === "number" ? m.c : 0;
   const pct = Math.max(0, Math.min(100, conf * 10));
   const lowConf = conf < 6;
@@ -50,8 +53,12 @@ export function MatchCard({
             </div>
             {live ? (
               <div className="scell live">
-                <div className="lab">Real</div>
-                <div className="num">EN JUEGO</div>
+                <div className="lab">
+                  <span className="livedot" /> En vivo
+                </div>
+                <div className={"num" + (liveScore ? " livescore" : " waiting")}>
+                  {liveScore ? `${liveScore[0]}:${liveScore[1]}` : "···"}
+                </div>
               </div>
             ) : (
               <div className="scell real">

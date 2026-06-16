@@ -1,18 +1,21 @@
-import type { Match, Results } from "../types";
+import type { LiveMap, Match, Results } from "../types";
 import { effResult, isLive, verdict } from "../lib/logic";
 
 export function MatchRow({
   m,
   results,
+  liveMap,
   onOpen,
 }: {
   m: Match;
   results: Results;
+  liveMap: LiveMap;
   onOpen: (id: string) => void;
 }) {
   const r = effResult(m, results);
-  const live = isLive(m, results);
-  const vd = verdict(m, results);
+  const live = isLive(m, results, liveMap);
+  const liveScore = live ? liveMap[m.id] : null;
+  const vd = verdict(m, results, liveMap);
 
   return (
     <button
@@ -35,7 +38,7 @@ export function MatchRow({
         <span className="sep">/</span>
         {live ? (
           <span className="r" style={{ color: "var(--live)" }}>
-            LIVE
+            {liveScore ? `${liveScore[0]}:${liveScore[1]}` : "LIVE"}
           </span>
         ) : (
           <span className={"r" + (r ? "" : " pend")}>

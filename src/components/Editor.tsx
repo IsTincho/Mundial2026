@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Match, Results, Score } from "../types";
-import { effResult, fmtDate, hasUser } from "../lib/logic";
+import { effResult, fmtDate } from "../lib/logic";
 
 function parseScore(hs: string, as: string): Score | null {
   const h = hs.trim();
@@ -16,12 +16,14 @@ function parseScore(hs: string, as: string): Score | null {
 export function Editor({
   match,
   results,
+  userLoaded,
   onSave,
   onClear,
   onClose,
 }: {
   match: Match | null;
   results: Results;
+  userLoaded: boolean;
   onSave: (id: string, score: Score) => void;
   onClear: (id: string) => void;
   onClose: () => void;
@@ -58,7 +60,7 @@ export function Editor({
     return <dialog ref={dlgRef} aria-labelledby="ed-title" />;
   }
 
-  const isUser = hasUser(match, results);
+  const isUser = userLoaded;
   const hasSeed = match.r != null;
   const resetMode: "clear" | "restore" | "none" = isUser
     ? "clear"

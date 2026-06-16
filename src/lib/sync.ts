@@ -3,46 +3,7 @@
 // timeout, y cae en silencio si algo falla. Nunca pisa datos existentes.
 import type { Match, Results, Team } from "../types";
 import { effResult } from "./logic";
-
-const NAME_ALIASES: Record<string, string> = {
-  "mexico": "México", "south korea": "Corea del Sur", "korea republic": "Corea del Sur",
-  "south africa": "Sudáfrica", "czechia": "Chequia", "czech republic": "Chequia",
-  "switzerland": "Suiza", "canada": "Canadá", "qatar": "Qatar",
-  "bosnia and herzegovina": "Bosnia", "bosnia herzegovina": "Bosnia", "bosnia": "Bosnia",
-  "brazil": "Brasil", "morocco": "Marruecos", "scotland": "Escocia", "haiti": "Haití",
-  "united states": "EE.UU.", "usa": "EE.UU.", "united states of america": "EE.UU.",
-  "turkey": "Turquía", "turkiye": "Turquía", "australia": "Australia", "paraguay": "Paraguay",
-  "germany": "Alemania", "ecuador": "Ecuador",
-  "ivory coast": "Costa de Marfil", "cote divoire": "Costa de Marfil", "cote d ivoire": "Costa de Marfil",
-  "curacao": "Curazao", "netherlands": "Países Bajos", "holland": "Países Bajos",
-  "japan": "Japón", "sweden": "Suecia", "tunisia": "Túnez", "belgium": "Bélgica",
-  "iran": "Irán", "ir iran": "Irán", "egypt": "Egipto", "new zealand": "Nueva Zelanda",
-  "spain": "España", "uruguay": "Uruguay", "saudi arabia": "Arabia Saudita",
-  "cape verde": "Cabo Verde", "cabo verde": "Cabo Verde", "france": "Francia",
-  "senegal": "Senegal", "norway": "Noruega", "iraq": "Irak", "argentina": "Argentina",
-  "austria": "Austria", "algeria": "Argelia", "jordan": "Jordania", "portugal": "Portugal",
-  "colombia": "Colombia", "dr congo": "RD Congo", "congo dr": "RD Congo",
-  "democratic republic of the congo": "RD Congo", "uzbekistan": "Uzbekistán",
-  "england": "Inglaterra", "croatia": "Croacia", "panama": "Panamá", "ghana": "Ghana",
-};
-
-function norm(s: string): string {
-  return String(s)
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "") // saca diacríticos
-    .replace(/[^a-z0-9]/g, "");      // saca todo lo no alfanumérico
-}
-
-// Mapa normalizado -> nombre canónico (incluye los propios nombres en español).
-function buildAlias(groups: Record<string, Team[]>): Record<string, string> {
-  const alias: Record<string, string> = {};
-  for (const k of Object.keys(NAME_ALIASES)) alias[norm(k)] = NAME_ALIASES[k];
-  for (const g of Object.keys(groups)) {
-    for (const t of groups[g]) alias[norm(t[0])] = t[0];
-  }
-  return alias;
-}
+import { makeNameMapper } from "./names";
 
 interface SportsDbEvent {
   intHomeScore?: string | null;
@@ -64,9 +25,7 @@ export async function syncResults(
   results: Results,
   groups: Record<string, Team[]>,
 ): Promise<SyncOutcome> {
-  const alias = buildAlias(groups);
-  const mapName = (s: string | undefined): string | null =>
-    s ? alias[norm(s)] || null : null;
+  const mapName = makeNameMapper(groups);
 
   const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
   const timer = setTimeout(() => ctrl?.abort(), 6000);

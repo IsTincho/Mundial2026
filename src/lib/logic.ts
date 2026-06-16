@@ -1,6 +1,7 @@
 // Lógica pura del prode: resultado efectivo, veredicto, tabla y tracker.
 // Sin estado ni DOM — recibe `results` (cargas del usuario) por parámetro.
 import type {
+  LiveMap,
   Match,
   Results,
   Score,
@@ -19,17 +20,21 @@ export function effResult(m: Match, results: Results): Score | null {
   return hasUser(m, results) ? results[m.id] : m.r;
 }
 
-// En vivo solo si la semilla lo marca y nadie cargó nada todavía.
-export function isLive(m: Match, results: Results): boolean {
-  return !!m.live && !hasUser(m, results) && m.r == null;
+// En vivo si la API lo marca (o, sin liveMap, el flag semilla) y nadie cargó
+// nada todavía. La carga del usuario o un resultado semilla pisan el "en vivo".
+export function isLive(m: Match, results: Results, live?: LiveMap): boolean {
+  const flagged = live
+    ? Object.prototype.hasOwnProperty.call(live, m.id)
+    : !!m.live;
+  return flagged && !hasUser(m, results) && m.r == null;
 }
 
 function sign(a: number, b: number): number {
   return a > b ? 1 : a < b ? -1 : 0;
 }
 
-export function verdict(m: Match, results: Results): Verdict {
-  if (isLive(m, results)) return "live";
+export function verdict(m: Match, results: Results, live?: LiveMap): Verdict {
+  if (isLive(m, results, live)) return "live";
   const r = effResult(m, results);
   if (!r) return "pending";
   if (r[0] === m.p[0] && r[1] === m.p[1]) return "exact";

@@ -1,5 +1,5 @@
 // Filtros y categorías: estado, confianza, confederación y búsqueda.
-import type { Filters, Match, Results, StatusFilter } from "../types";
+import type { Filters, LiveMap, Match, Results, StatusFilter } from "../types";
 import { CONFED } from "../data";
 import { effResult, isLive, verdict } from "./logic";
 
@@ -12,16 +12,20 @@ export function norm(s: string): string {
 }
 
 // ¿El partido entra en el filtro de estado?
-function matchStatus(m: Match, results: Results): StatusFilter {
-  if (isLive(m, results)) return "live";
+function matchStatus(m: Match, results: Results, live?: LiveMap): StatusFilter {
+  if (isLive(m, results, live)) return "live";
   const r = effResult(m, results);
   if (!r) return "pending";
-  return verdict(m, results) as StatusFilter; // exact | winner | miss
+  return verdict(m, results, live) as StatusFilter; // exact | winner | miss
 }
 
 export type StatusCounts = Record<StatusFilter, number>;
 
-export function statusCounts(matches: Match[], results: Results): StatusCounts {
+export function statusCounts(
+  matches: Match[],
+  results: Results,
+  live?: LiveMap,
+): StatusCounts {
   const c: StatusCounts = {
     all: matches.length,
     live: 0,
@@ -30,7 +34,7 @@ export function statusCounts(matches: Match[], results: Results): StatusCounts {
     winner: 0,
     miss: 0,
   };
-  for (const m of matches) c[matchStatus(m, results)]++;
+  for (const m of matches) c[matchStatus(m, results, live)]++;
   return c;
 }
 
@@ -40,8 +44,9 @@ export function passesFilters(
   m: Match,
   results: Results,
   f: Filters,
+  live?: LiveMap,
 ): boolean {
-  if (f.status !== "all" && matchStatus(m, results) !== f.status) return false;
+  if (f.status !== "all" && matchStatus(m, results, live) !== f.status) return false;
   if (f.conf === "low" && m.c >= LOW_CONF) return false;
   if (f.conf === "high" && m.c < LOW_CONF) return false;
   if (f.confed && CONFED[m.h] !== f.confed && CONFED[m.a] !== f.confed) return false;
@@ -61,8 +66,9 @@ export function filterMatches(
   matches: Match[],
   results: Results,
   f: Filters,
+  live?: LiveMap,
 ): Match[] {
-  return matches.filter((m) => passesFilters(m, results, f));
+  return matches.filter((m) => passesFilters(m, results, f, live));
 }
 
 export const EMPTY_FILTERS: Filters = {

@@ -11,6 +11,7 @@ import { CONFEDS, GROUPS, MATCHES, UPDATED } from "./data";
 import {
   byDateThenGroup,
   fmtDate,
+  hasUser,
   isLive,
   playedCount,
   tracker,
@@ -23,6 +24,7 @@ import {
 } from "./lib/filters";
 import { syncResults } from "./lib/sync";
 import { useResults } from "./hooks/useResults";
+import { useLive } from "./hooks/useLive";
 import { Header } from "./components/Header";
 import { TopBar } from "./components/TopBar";
 import { FilterBar } from "./components/FilterBar";
@@ -40,6 +42,10 @@ const GRUPOS = Object.keys(GROUPS);
 
 export default function App() {
   const { results, setScore, clearScore, applyPatch, resetAll } = useResults();
+  const { live: liveMap, finals } = useLive(MATCHES, GROUPS);
+  // Resultados efectivos: tus cargas pisan los finales de la API; ambos pisan
+  // la semilla (manejada dentro de effResult). Los finales NO se persisten.
+  const eff = useMemo(() => ({ ...finals, ...results }), [finals, results]);
   const [view, setView] = useState<View>("fecha");
   const [mode, setMode] = useState<ViewMode>("cards");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -48,12 +54,12 @@ export default function App() {
   const [syncing, setSyncing] = useState(false);
   const { toast, node: toastNode } = useToast();
 
-  const stats = useMemo(() => tracker(MATCHES, results), [results]);
+  const stats = useMemo(() => tracker(MATCHES, eff), [eff]);
   const liveCount = useMemo(
-    () => MATCHES.filter((m) => isLive(m, results)).length,
-    [results],
+    () => MATCHES.filter((m) => isLive(m, eff, liveMap)).length,
+    [eff, liveMap],
   );
-  const counts = useMemo(() => statusCounts(MATCHES, results), [results]);
+  const counts = useMemo(() => statusCounts(MATCHES, eff, liveMap), [eff, liveMap]);
   const active = filtersActive(filters);
   const editMatch = useMemo(
     () => MATCHES.find((m) => m.id === editId) ?? null,
@@ -70,8 +76,8 @@ export default function App() {
 
   // --- resultados de filtro (modo plano, sin paginación) ---
   const filtered = useMemo(
-    () => filterMatches(MATCHES, results, filters).slice().sort(byDateThenGroup),
-    [results, filters],
+    () => filterMatches(MATCHES, eff, filters, liveMap).slice().sort(byDateThenGroup),
+    [eff, filters, liveMap],
   );
 
   // --- páginas (sin filtros activos) ---
@@ -101,7 +107,7 @@ export default function App() {
 
   const onSync = async () => {
     setSyncing(true);
-    const out = await syncResults(MATCHES, results, GROUPS);
+    const out = await syncResults(MATCHES, eff, GROUPS);
     setSyncing(false);
     if (!out.ok) return toast("No pude conectarme; segui con carga manual");
     if (out.filled > 0) {
@@ -120,13 +126,13 @@ export default function App() {
     mode === "dense" ? (
       <div className="mrows">
         {list.map((m) => (
-          <MatchRow key={m.id} m={m} results={results} onOpen={setEditId} />
+          <MatchRow key={m.id} m={m} results={eff} liveMap={liveMap} onOpen={setEditId} />
         ))}
       </div>
     ) : (
       <div className="tickets">
         {list.map((m) => (
-          <MatchCard key={m.id} m={m} results={results} onOpen={setEditId} />
+          <MatchCard key={m.id} m={m} results={eff} liveMap={liveMap} onOpen={setEditId} />
         ))}
       </div>
     );
@@ -134,7 +140,7 @@ export default function App() {
   // --- contenido principal ---
   let content;
   if (view === "bracket") {
-    content = <Bracket groups={GROUPS} matches={MATCHES} results={results} />;
+    content = <Bracket groups={GROUPS} matches={MATCHES} results={eff} />;
   } else if (active) {
     content = (
       <section>
@@ -164,7 +170,7 @@ export default function App() {
       label: "Jornada",
       big: "Fecha",
       em: String(f).padStart(2, "0"),
-      meta: `${playedCount(list, results)} de ${list.length} jugados · ${dateRange(list)}`,
+      meta: `${playedCount(list, eff)} de ${list.length} jugados · ${dateRange(list)}`,
     };
     content = (
       <>
@@ -180,12 +186,12 @@ export default function App() {
       label: "Zona",
       big: "Grupo",
       em: g,
-      meta: `${playedCount(list, results)} de ${list.length} jugados · ${dateRange(list)}`,
+      meta: `${playedCount(list, eff)} de ${list.length} jugados · ${dateRange(list)}`,
     };
     content = (
       <>
         <Pager pages={GRUPOS.length} index={idx} onIndex={(i) => setPage((p) => ({ ...p, grupo: i }))} info={info} />
-        <Standings group={g} groups={GROUPS} matches={MATCHES} results={results} />
+        <Standings group={g} groups={GROUPS} matches={MATCHES} results={eff} />
         {renderList(list)}
       </>
     );
@@ -245,7 +251,8 @@ export default function App() {
 
       <Editor
         match={editMatch}
-        results={results}
+        results={eff}
+        userLoaded={editMatch ? hasUser(editMatch, results) : false}
         onSave={onSave}
         onClear={onClearScore}
         onClose={() => setEditId(null)}
