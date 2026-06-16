@@ -45,13 +45,19 @@ import { useToast } from "./components/Toast";
 const FECHAS = [1, 2, 3] as const;
 const GRUPOS = Object.keys(GROUPS);
 
+// API-Football suspendido: el plan Free de la cuenta no da acceso a la
+// temporada 2026 ("Free plans do not have access to this season"). La app usa
+// TheSportsDB como única fuente. Poner en true cuando haya plan pago para
+// reactivar live minuto a minuto, resultados y detalle vía API-Football.
+const USE_API_FOOTBALL = false;
+
 export default function App() {
   const { results, setScore, clearScore, applyPatch, resetAll } = useResults();
   const { live: sdbLive, finals, eventIds: liveEventIds, kickoffs: liveKo, progress: sdbProgress } = useLive(MATCHES, GROUPS);
-  const afLiveMap = useApiFootball(MATCHES, GROUPS);
+  const afLiveMap = useApiFootball(MATCHES, GROUPS, USE_API_FOOTBALL);
   // Finalizados de todo el torneo desde API-Football (si hay key). Se mergean
   // como los `finals` de TheSportsDB: cobertura de días pasados, no solo hoy.
-  const afFinals = useAfResults(MATCHES, GROUPS);
+  const afFinals = useAfResults(MATCHES, GROUPS, USE_API_FOOTBALL);
   // API-Football (si hay key) pisa el live de TheSportsDB; si no, queda igual.
   const liveMap = useMemo(() => {
     if (!afLiveMap) return sdbLive;

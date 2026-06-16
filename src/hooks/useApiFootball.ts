@@ -9,10 +9,15 @@ const POLL_MS = 30_000;
 export function useApiFootball(
   matches: Match[],
   groups: Record<string, Team[]>,
+  enabled = true,
 ): Record<string, AfLiveEntry> | null {
   const [live, setLive] = useState<Record<string, AfLiveEntry> | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setLive(null);
+      return;
+    }
     let alive = true;
     const tick = () =>
       afLive(matches, groups).then((m) => {
@@ -25,7 +30,7 @@ export function useApiFootball(
       clearInterval(id);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [enabled]);
 
   return live;
 }

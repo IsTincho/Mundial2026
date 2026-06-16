@@ -11,10 +11,15 @@ const POLL_MS = 90_000;
 export function useAfResults(
   matches: Match[],
   groups: Record<string, Team[]>,
+  enabled = true,
 ): Record<string, Score> | null {
   const [res, setRes] = useState<Record<string, Score> | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      setRes(null);
+      return;
+    }
     let alive = true;
     const tick = () =>
       afResults(matches, groups).then((m) => {
@@ -28,7 +33,7 @@ export function useAfResults(
     };
     // matches y groups son constantes del módulo
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [enabled]);
 
   return res;
 }
