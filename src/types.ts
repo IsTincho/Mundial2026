@@ -17,7 +17,6 @@ export interface Match {
   live?: boolean;     // true si está en juego (sin final)
   id: string;         // "G-F-Local-Visita" (estable)
   n: number;          // número de partido 1..72 (para el serial del ticket)
-  ko: string;         // kickoff ISO con offset (ET) — se formatea a hora local
 }
 
 export interface ProdeData {

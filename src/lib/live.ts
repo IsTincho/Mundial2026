@@ -14,6 +14,7 @@ interface DayEvent {
   strStatus?: string | null;
   strSport?: string | null;
   strTimestamp?: string | null;
+  strProgress?: string | null;
 }
 
 // Normaliza el timestamp de TheSportsDB (UTC sin sufijo) a ISO con Z.
@@ -41,6 +42,7 @@ export interface LiveFeed {
   finals: Results;   // partidos terminados (para rellenar pendientes)
   eventIds: Record<string, string>;  // matchId → idEvent (para el detalle)
   kickoffs: Record<string, string>;  // matchId → kickoff ISO UTC (hora real)
+  progress: Record<string, string>;  // matchId → minuto/estado en vivo (ej "67", "HT")
 }
 
 const API = "https://www.thesportsdb.com/api/v1/json/123/eventsday.php";
@@ -74,6 +76,7 @@ export async function fetchLive(
   const finals: Results = {};
   const eventIds: Record<string, string> = {};
   const kickoffs: Record<string, string> = {};
+  const progress: Record<string, string> = {};
 
   const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
   const timer = setTimeout(() => ctrl?.abort(), 6000);
@@ -107,13 +110,16 @@ export async function fetchLive(
       const inPlay = IN_PLAY.has(status);
       const done = FINISHED.has(status);
       const score = parseScore(ev.intHomeScore, ev.intAwayScore);
-      if (inPlay) live[m.id] = score;
-      else if (done && score) finals[m.id] = score;
+      if (inPlay) {
+        live[m.id] = score;
+        const p = (ev.strProgress || "").trim();
+        if (p) progress[m.id] = p;
+      } else if (done && score) finals[m.id] = score;
     }
 
-    return { live, finals, eventIds, kickoffs };
+    return { live, finals, eventIds, kickoffs, progress };
   } catch {
     clearTimeout(timer);
-    return { live: {}, finals: {}, eventIds: {}, kickoffs: {} };
+    return { live: {}, finals: {}, eventIds: {}, kickoffs: {}, progress: {} };
   }
 }

@@ -1,6 +1,6 @@
 import type { LiveMap, Match, Results } from "../types";
 import { teamMeta } from "../data";
-import { effResult, isLive, localDate, localTime, verdict } from "../lib/logic";
+import { effResult, fmtDate, isLive, localDate, localTime, verdict } from "../lib/logic";
 import { VerdictTag } from "./Score";
 import { Flag, VsCrest } from "./Flag";
 
@@ -17,7 +17,7 @@ export function MatchCard({
   ko?: string;
   onOpen: (id: string) => void;
 }) {
-  const koUsed = ko || m.ko;
+  const when = ko ? `${localDate(ko)} · ${localTime(ko)}` : fmtDate(m.d);
   const r = effResult(m, results);
   const live = isLive(m, results, liveMap);
   const liveScore = live ? liveMap[m.id] : null;
@@ -40,7 +40,7 @@ export function MatchCard({
           <span className="no">№ {serial}</span>
           <span className="dotrow" aria-hidden="true" />
           <span className="code">
-            GRP {m.g} · {localDate(koUsed)} · {localTime(koUsed)}
+            GRP {m.g} · {when}
           </span>
         </div>
         <span className="stampbox">

@@ -34,7 +34,7 @@ export function MatchRow({
         <span>{m.a}</span>
         <Flag team={m.a} size="sm" />
       </span>
-      <span className="gtag">{m.g} · {localTime(ko || m.ko)}</span>
+      <span className="gtag">{m.g}{ko ? " · " + localTime(ko) : ""}</span>
       <span className="sc">
         <span className="p">
           {m.p[0]}:{m.p[1]}

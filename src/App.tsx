@@ -36,6 +36,7 @@ import { MatchRow } from "./components/MatchRow";
 import { Standings } from "./components/Standings";
 import { Bracket } from "./components/Bracket";
 import { Editor } from "./components/Editor";
+import { LiveNow, type LiveItem } from "./components/LiveNow";
 import { useToast } from "./components/Toast";
 
 const FECHAS = [1, 2, 3] as const;
@@ -43,7 +44,7 @@ const GRUPOS = Object.keys(GROUPS);
 
 export default function App() {
   const { results, setScore, clearScore, applyPatch, resetAll } = useResults();
-  const { live: liveMap, finals, eventIds: liveEventIds, kickoffs: liveKo } = useLive(MATCHES, GROUPS);
+  const { live: liveMap, finals, eventIds: liveEventIds, kickoffs: liveKo, progress } = useLive(MATCHES, GROUPS);
   const season = useEventIds(MATCHES, GROUPS);
   // IDs de evento + horarios reales: eventsday (hoy, incluye live) + eventsseason.
   const eventIds = useMemo(
@@ -66,10 +67,17 @@ export default function App() {
   const { toast, node: toastNode } = useToast();
 
   const stats = useMemo(() => tracker(MATCHES, eff), [eff]);
-  const liveCount = useMemo(
-    () => MATCHES.filter((m) => isLive(m, eff, liveMap)).length,
-    [eff, liveMap],
+  const liveItems = useMemo<LiveItem[]>(
+    () =>
+      MATCHES.filter((m) => isLive(m, eff, liveMap)).map((m) => ({
+        m,
+        score: liveMap[m.id] ?? null,
+        eventId: eventIds[m.id],
+        progress: progress[m.id],
+      })),
+    [eff, liveMap, eventIds, progress],
   );
+  const liveCount = liveItems.length;
   const counts = useMemo(() => statusCounts(MATCHES, eff, liveMap), [eff, liveMap]);
   const active = filtersActive(filters);
   const editMatch = useMemo(
@@ -211,6 +219,11 @@ export default function App() {
   return (
     <>
       <Header stats={stats} liveCount={liveCount} />
+      {liveItems.length > 0 && (
+        <div className="wrap">
+          <LiveNow items={liveItems} onOpen={setEditId} />
+        </div>
+      )}
       <TopBar view={view} onView={setView} mode={mode} onMode={setMode} />
 
       <main>
@@ -255,7 +268,7 @@ export default function App() {
             <a href="https://www.thesportsdb.com" target="_blank" rel="noopener">
               TheSportsDB
             </a>
-. Horarios reales (cuando hay cobertura) en tu hora local. Tocá un partido para ver el detalle o cargar su resultado.
+. Fecha y hora reales de la API, en tu hora local (los partidos sin cobertura todavía muestran solo la fecha). Tocá un partido para ver el detalle o cargar su resultado.
           </p>
           <p className="credit">
             Desarrollado por{" "}
@@ -271,7 +284,7 @@ export default function App() {
         results={eff}
         userLoaded={editMatch ? hasUser(editMatch, results) : false}
         eventId={editMatch ? eventIds[editMatch.id] ?? null : null}
-        ko={editMatch ? kickoffs[editMatch.id] ?? editMatch.ko : ""}
+        ko={editMatch ? kickoffs[editMatch.id] ?? "" : ""}
         live={editMatch ? isLive(editMatch, eff, liveMap) : false}
         onSave={onSave}
         onClear={onClearScore}
