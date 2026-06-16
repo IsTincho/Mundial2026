@@ -51,6 +51,16 @@ La app **se conecta sola** a [TheSportsDB](https://www.thesportsdb.com) (con la 
 
 > La cobertura del Mundial 2026 en la API puede variar; la app degrada con elegancia si no hay datos.
 
+### En vivo "pro" opcional: API-Football (CF Pages Function)
+
+Para live más fino (minuto a minuto, posesión, xG, etc.) hay un **proxy** en `functions/api/af.js` (Cloudflare Pages Function) que habla con [API-Football](https://www.api-football.com). **Sin configurar, no hace nada** — la app sigue con TheSportsDB. Para activarlo:
+
+1. Creá una cuenta **free** en api-football.com (tier gratis: 100 requests/día) y copiá tu API key.
+2. En Cloudflare → tu proyecto Pages → **Settings → Environment variables** → agregá `API_FOOTBALL_KEY` (encriptada) con tu key. Redeploy.
+3. Listo: cuando hay partidos del Mundial en vivo, la app **prefiere** API-Football (marcador, minuto y stats) y cae a TheSportsDB si algo falla. La key vive solo en el server (la Function), **nunca** se expone al cliente.
+
+> El tier free (100/día) alcanza para los partidos del día con cache; para uso intensivo, plan pago.
+
 ## Stack
 
 - **React 19 + Vite 7 + TypeScript** (build estático, sin servidor).

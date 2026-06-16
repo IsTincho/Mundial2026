@@ -10,6 +10,7 @@ import type {
 import { CONFEDS, GROUPS, MATCHES, UPDATED } from "./data";
 import {
   byDateThenGroup,
+  effResult,
   fmtDate,
   hasUser,
   isLive,
@@ -26,6 +27,7 @@ import { syncResults } from "./lib/sync";
 import { useResults } from "./hooks/useResults";
 import { useLive } from "./hooks/useLive";
 import { useEventIds } from "./hooks/useEventIds";
+import { useApiFootball } from "./hooks/useApiFootball";
 import { Header } from "./components/Header";
 import { TopBar } from "./components/TopBar";
 import { FilterBar } from "./components/FilterBar";
@@ -44,7 +46,29 @@ const GRUPOS = Object.keys(GROUPS);
 
 export default function App() {
   const { results, setScore, clearScore, applyPatch, resetAll } = useResults();
-  const { live: liveMap, finals, eventIds: liveEventIds, kickoffs: liveKo, progress } = useLive(MATCHES, GROUPS);
+  const { live: sdbLive, finals, eventIds: liveEventIds, kickoffs: liveKo, progress: sdbProgress } = useLive(MATCHES, GROUPS);
+  const afLiveMap = useApiFootball(MATCHES, GROUPS);
+  // API-Football (si hay key) pisa el live de TheSportsDB; si no, queda igual.
+  const liveMap = useMemo(() => {
+    if (!afLiveMap) return sdbLive;
+    const m = { ...sdbLive };
+    for (const id in afLiveMap) m[id] = afLiveMap[id].score;
+    return m;
+  }, [sdbLive, afLiveMap]);
+  const progress = useMemo(() => {
+    if (!afLiveMap) return sdbProgress;
+    const m = { ...sdbProgress };
+    for (const id in afLiveMap) {
+      const e = afLiveMap[id].elapsed;
+      if (e != null) m[id] = String(e);
+    }
+    return m;
+  }, [sdbProgress, afLiveMap]);
+  const afFids = useMemo(() => {
+    const m: Record<string, number> = {};
+    if (afLiveMap) for (const id in afLiveMap) m[id] = afLiveMap[id].fid;
+    return m;
+  }, [afLiveMap]);
   const season = useEventIds(MATCHES, GROUPS);
   // IDs de evento + horarios reales: eventsday (hoy, incluye live) + eventsseason.
   const eventIds = useMemo(
@@ -73,9 +97,10 @@ export default function App() {
         m,
         score: liveMap[m.id] ?? null,
         eventId: eventIds[m.id],
+        afFid: afFids[m.id],
         progress: progress[m.id],
       })),
-    [eff, liveMap, eventIds, progress],
+    [eff, liveMap, eventIds, progress, afFids],
   );
   const liveCount = liveItems.length;
   const counts = useMemo(() => statusCounts(MATCHES, eff, liveMap), [eff, liveMap]);
@@ -93,17 +118,25 @@ export default function App() {
   const onQuery = (q: string) => patch({ query: q });
   const onClear = () => setFilters(EMPTY_FILTERS);
 
+  // Orden: lo que falta jugar arriba (en vivo → pendientes), jugados abajo.
+  const finishedRank = (m: Match) =>
+    !isLive(m, eff, liveMap) && effResult(m, eff) ? 1 : 0;
+  const upcomingFirst =
+    (cmp: (a: Match, b: Match) => number) => (a: Match, b: Match) =>
+      finishedRank(a) - finishedRank(b) || cmp(a, b);
+
   // --- resultados de filtro (modo plano, sin paginación) ---
   const filtered = useMemo(
-    () => filterMatches(MATCHES, eff, filters, liveMap).slice().sort(byDateThenGroup),
+    () => filterMatches(MATCHES, eff, filters, liveMap).slice().sort(upcomingFirst(byDateThenGroup)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [eff, filters, liveMap],
   );
 
   // --- páginas (sin filtros activos) ---
   const fechaList = (f: number) =>
-    MATCHES.filter((m) => m.f === f).slice().sort(byDateThenGroup);
+    MATCHES.filter((m) => m.f === f).slice().sort(upcomingFirst(byDateThenGroup));
   const grupoList = (g: string) =>
-    MATCHES.filter((m) => m.g === g).slice().sort((a, b) => a.f - b.f || byDateThenGroup(a, b));
+    MATCHES.filter((m) => m.g === g).slice().sort(upcomingFirst((a, b) => a.f - b.f || byDateThenGroup(a, b)));
 
   const dateRange = (list: Match[]): string => {
     if (!list.length) return "";
@@ -284,6 +317,7 @@ export default function App() {
         results={eff}
         userLoaded={editMatch ? hasUser(editMatch, results) : false}
         eventId={editMatch ? eventIds[editMatch.id] ?? null : null}
+        afFid={editMatch ? afFids[editMatch.id] ?? null : null}
         ko={editMatch ? kickoffs[editMatch.id] ?? "" : ""}
         live={editMatch ? isLive(editMatch, eff, liveMap) : false}
         onSave={onSave}

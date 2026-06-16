@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Match, Score } from "../types";
 import { teamMeta } from "../data";
-import { fetchDetail, type MatchDetail, type StatRow } from "../lib/matchDetail";
+import type { MatchDetail, StatRow } from "../lib/matchDetail";
+import { fetchBestDetail } from "../lib/apiFootball";
 import { Flag, VsCrest } from "./Flag";
 
 const POLL_MS = 30_000;
@@ -10,6 +11,7 @@ export interface LiveItem {
   m: Match;
   score: Score | null;
   eventId?: string;
+  afFid?: number;
   progress?: string;
 }
 
@@ -33,20 +35,20 @@ function topStats(stats: StatRow[]): StatRow[] {
 }
 
 function LiveCard({ item, onOpen }: { item: LiveItem; onOpen: (id: string) => void }) {
-  const { m, score, eventId, progress } = item;
+  const { m, score, eventId, afFid, progress } = item;
   const [detail, setDetail] = useState<MatchDetail | null>(null);
 
   useEffect(() => {
-    if (!eventId) return;
+    if (!eventId && !afFid) return;
     let alive = true;
-    const tick = () => fetchDetail(eventId).then((d) => alive && setDetail(d));
+    const tick = () => fetchBestDetail(afFid, eventId).then((d) => alive && setDetail(d));
     tick();
     const id = setInterval(tick, POLL_MS);
     return () => {
       alive = false;
       clearInterval(id);
     };
-  }, [eventId]);
+  }, [eventId, afFid]);
 
   const stats = detail ? topStats(detail.stats) : [];
   const lastGoal = detail?.events.filter((e) => /goal/i.test(e.type)).slice(-1)[0];

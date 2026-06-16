@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { MatchDetail, TimelineEvent } from "../lib/matchDetail";
-import { fetchDetail } from "../lib/matchDetail";
+import { fetchBestDetail } from "../lib/apiFootball";
 
 const POLL_MS = 30_000;
 
@@ -30,9 +30,11 @@ function Row({ e }: { e: TimelineEvent }) {
 
 export function MatchDetailPanel({
   eventId,
+  afFid,
   live,
 }: {
-  eventId: string;
+  eventId: string | null;
+  afFid: number | null;
   live: boolean;
 }) {
   const [detail, setDetail] = useState<MatchDetail | null>(null);
@@ -43,7 +45,7 @@ export function MatchDetailPanel({
     setLoading(true);
     setDetail(null);
     const tick = () =>
-      fetchDetail(eventId).then((d) => {
+      fetchBestDetail(afFid, eventId).then((d) => {
         if (!alive) return;
         setDetail(d);
         setLoading(false);
@@ -54,7 +56,7 @@ export function MatchDetailPanel({
       alive = false;
       if (id) clearInterval(id);
     };
-  }, [eventId, live]);
+  }, [eventId, afFid, live]);
 
   if (loading) {
     return <div className="detail loading">Cargando detalle…</div>;
