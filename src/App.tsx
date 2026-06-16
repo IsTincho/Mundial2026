@@ -29,6 +29,7 @@ import { useLive } from "./hooks/useLive";
 import { useEventIds } from "./hooks/useEventIds";
 import { useApiFootball } from "./hooks/useApiFootball";
 import { useAfResults } from "./hooks/useAfResults";
+import { useEspn } from "./hooks/useEspn";
 import { Header } from "./components/Header";
 import { TopBar } from "./components/TopBar";
 import { FilterBar } from "./components/FilterBar";
@@ -58,22 +59,24 @@ export default function App() {
   // Finalizados de todo el torneo desde API-Football (si hay key). Se mergean
   // como los `finals` de TheSportsDB: cobertura de días pasados, no solo hoy.
   const afFinals = useAfResults(MATCHES, GROUPS, USE_API_FOOTBALL);
-  // API-Football (si hay key) pisa el live de TheSportsDB; si no, queda igual.
+  // ESPN (gratis, sin key): fuente principal de EN VIVO, horarios y finalizados.
+  const espn = useEspn(MATCHES, GROUPS);
+  // Precedencia del live: TheSportsDB < ESPN < API-Football (si hay key).
   const liveMap = useMemo(() => {
-    if (!afLiveMap) return sdbLive;
-    const m = { ...sdbLive };
-    for (const id in afLiveMap) m[id] = afLiveMap[id].score;
+    const m = { ...sdbLive, ...espn.live };
+    if (afLiveMap) for (const id in afLiveMap) m[id] = afLiveMap[id].score;
     return m;
-  }, [sdbLive, afLiveMap]);
+  }, [sdbLive, espn.live, afLiveMap]);
   const progress = useMemo(() => {
-    if (!afLiveMap) return sdbProgress;
-    const m = { ...sdbProgress };
-    for (const id in afLiveMap) {
-      const e = afLiveMap[id].elapsed;
-      if (e != null) m[id] = String(e);
+    const m = { ...sdbProgress, ...espn.progress };
+    if (afLiveMap) {
+      for (const id in afLiveMap) {
+        const e = afLiveMap[id].elapsed;
+        if (e != null) m[id] = String(e);
+      }
     }
     return m;
-  }, [sdbProgress, afLiveMap]);
+  }, [sdbProgress, espn.progress, afLiveMap]);
   const afFids = useMemo(() => {
     const m: Record<string, number> = {};
     if (afLiveMap) for (const id in afLiveMap) m[id] = afLiveMap[id].fid;
@@ -86,16 +89,16 @@ export default function App() {
     [season, liveEventIds],
   );
   const kickoffs = useMemo(
-    () => ({ ...season.kickoffs, ...liveKo }),
-    [season, liveKo],
+    () => ({ ...season.kickoffs, ...liveKo, ...espn.kickoffs }),
+    [season, liveKo, espn.kickoffs],
   );
   // Resultados efectivos: tus cargas pisan los finales de la API; ambos pisan
   // la semilla (manejada dentro de effResult). Los finales NO se persisten.
-  // Orden de precedencia: finales TheSportsDB (hoy) < finales API-Football
-  // (todo el torneo) < cargas del usuario.
+  // Orden de precedencia: finales TheSportsDB < ESPN < API-Football (si hay
+  // key) < cargas del usuario.
   const eff = useMemo(
-    () => ({ ...finals, ...(afFinals || {}), ...results }),
-    [finals, afFinals, results],
+    () => ({ ...finals, ...espn.finals, ...(afFinals || {}), ...results }),
+    [finals, espn.finals, afFinals, results],
   );
   const [view, setView] = useState<View>("fecha");
   const [mode, setMode] = useState<ViewMode>("cards");
