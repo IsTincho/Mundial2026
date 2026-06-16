@@ -102,30 +102,23 @@ prode-mundial-2026/
 
 > `public/vista-previa.html` es la versión vanilla previa (HTML+CSS+JS inline, un solo archivo). Queda como bonus: se abre con doble clic, sin build. La fuente canónica es la app de React.
 
-## Deploy a Cloudflare Pages
+## Deploy
 
-Es un build estático: build command `npm run build`, output `dist`.
+En vivo en **Cloudflare Pages**: <https://mundial2026-5qr.pages.dev>
 
-**Opción A — conectar el repo (recomendado).** En el dashboard de Cloudflare → **Workers & Pages → Create → Pages → Connect to Git**, elegí este repo y configurá:
+El repo está conectado por Git al proyecto de CF Pages, así que **cada push a `main` redeploya solo** (build `npm run build`, output `dist`, Node fijado en `.node-version`).
 
-- **Framework preset:** Vite
-- **Build command:** `npm run build`
-- **Build output directory:** `dist`
-
-Cada push a `main` redeploya solo.
-
-**Opción B — por CLI (Wrangler).**
+Deploy manual por CLI (opcional):
 
 ```bash
-npm run build
-npx wrangler pages deploy dist --project-name=mundial2026
+npm run deploy   # build + wrangler pages deploy dist --project-name=mundial2026-5qr
 ```
 
-Requiere estar logueado (`npx wrangler login`) o exportar `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID`.
+Requiere `npx wrangler login` o `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID`.
 
-## Deploy a GitHub Pages
+### Preview social
 
-Incluido un workflow en `.github/workflows/deploy.yml` que, en cada push a `main`, hace `npm run build` y publica `dist/` en GitHub Pages. Activalo en **Settings → Pages → Source: GitHub Actions**.
+`public/og.png` (1200×630) es la imagen de preview para Discord/WhatsApp/Twitter, generada con `npm run og` (script `scripts/make-og.mjs`). Las URLs absolutas en los meta `og:`/`twitter:` de `index.html` apuntan al dominio de CF Pages.
 
 ## Uso
 

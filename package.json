@@ -9,7 +9,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "og": "node scripts/make-og.mjs",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name=mundial2026"
+    "deploy": "npm run build && wrangler pages deploy dist --project-name=mundial2026-5qr"
   },
   "dependencies": {
     "@fontsource/anton": "^5.2.7",
