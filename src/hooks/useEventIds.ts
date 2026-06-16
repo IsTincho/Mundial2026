@@ -43,7 +43,10 @@ export function useEventIds(
           const h = mapName(ev.strHomeTeam);
           const a = mapName(ev.strAwayTeam);
           if (!h || !a) continue;
-          const m = matches.find((x) => x.h === h && x.a === a);
+          // Coincidencia en cualquier orden (la API puede invertir local/visita).
+          const m =
+            matches.find((x) => x.h === h && x.a === a) ||
+            matches.find((x) => x.h === a && x.a === h);
           if (!m) continue;
           if (ev.idEvent) ids[m.id] = ev.idEvent;
           const ko = toUtcIso(ev.strTimestamp);
