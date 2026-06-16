@@ -1,7 +1,7 @@
 // Cliente del proxy /api/af (Cloudflare Pages Function → API-Football).
 // Si el proxy responde 503 (sin key) o falla, devuelve null → el front cae
 // a TheSportsDB. Es una mejora opcional: cuando hay key, el live es mejor.
-import type { Match, Team } from "../types";
+import type { Match, Score, Team } from "../types";
 import type { MatchDetail } from "./matchDetail";
 import { fetchDetail } from "./matchDetail";
 import { makeNameMapper } from "./names";
@@ -58,6 +58,37 @@ export async function afLive(
     const score =
       ev.hs == null || ev.as == null ? null : ([ev.hs, ev.as] as [number, number]);
     out[m.id] = { score, elapsed: ev.elapsed ?? null, fid: ev.fid };
+  }
+  return out;
+}
+
+interface AfResultsRaw {
+  matches?: {
+    home?: string;
+    away?: string;
+    hs?: number | null;
+    as?: number | null;
+  }[];
+  error?: string;
+}
+
+// Resultados FINALIZADOS de todo el torneo, mapeados a nuestros matchId.
+// null si no hay key o falla → el front cae a la sync de TheSportsDB.
+export async function afResults(
+  matches: Match[],
+  groups: Record<string, Team[]>,
+): Promise<Record<string, Score> | null> {
+  const data = (await get("/api/af?kind=results")) as AfResultsRaw | null;
+  if (!data || data.error) return null;
+  const mapName = makeNameMapper(groups);
+  const out: Record<string, Score> = {};
+  for (const ev of data.matches || []) {
+    const h = mapName(ev.home);
+    const a = mapName(ev.away);
+    if (!h || !a || ev.hs == null || ev.as == null) continue;
+    const m = matches.find((x) => x.h === h && x.a === a);
+    if (!m) continue;
+    out[m.id] = [ev.hs, ev.as];
   }
   return out;
 }

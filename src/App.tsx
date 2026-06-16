@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   ConfFilter,
   Filters,
@@ -28,6 +28,7 @@ import { useResults } from "./hooks/useResults";
 import { useLive } from "./hooks/useLive";
 import { useEventIds } from "./hooks/useEventIds";
 import { useApiFootball } from "./hooks/useApiFootball";
+import { useAfResults } from "./hooks/useAfResults";
 import { Header } from "./components/Header";
 import { TopBar } from "./components/TopBar";
 import { FilterBar } from "./components/FilterBar";
@@ -48,6 +49,9 @@ export default function App() {
   const { results, setScore, clearScore, applyPatch, resetAll } = useResults();
   const { live: sdbLive, finals, eventIds: liveEventIds, kickoffs: liveKo, progress: sdbProgress } = useLive(MATCHES, GROUPS);
   const afLiveMap = useApiFootball(MATCHES, GROUPS);
+  // Finalizados de todo el torneo desde API-Football (si hay key). Se mergean
+  // como los `finals` de TheSportsDB: cobertura de días pasados, no solo hoy.
+  const afFinals = useAfResults(MATCHES, GROUPS);
   // API-Football (si hay key) pisa el live de TheSportsDB; si no, queda igual.
   const liveMap = useMemo(() => {
     if (!afLiveMap) return sdbLive;
@@ -81,7 +85,12 @@ export default function App() {
   );
   // Resultados efectivos: tus cargas pisan los finales de la API; ambos pisan
   // la semilla (manejada dentro de effResult). Los finales NO se persisten.
-  const eff = useMemo(() => ({ ...finals, ...results }), [finals, results]);
+  // Orden de precedencia: finales TheSportsDB (hoy) < finales API-Football
+  // (todo el torneo) < cargas del usuario.
+  const eff = useMemo(
+    () => ({ ...finals, ...(afFinals || {}), ...results }),
+    [finals, afFinals, results],
+  );
   const [view, setView] = useState<View>("fecha");
   const [mode, setMode] = useState<ViewMode>("cards");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
@@ -89,6 +98,28 @@ export default function App() {
   const [editId, setEditId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const { toast, node: toastNode } = useToast();
+
+  // Sync automática de resultados (temporada completa de TheSportsDB) al cargar
+  // y cada 5 min. Es el respaldo cuando no hay key de API-Football: rellena
+  // partidos pendientes de días pasados sin tener que apretar ningún botón.
+  // Solo completa lo que falta (nunca pisa cargas del usuario ni la semilla).
+  const effRef = useRef(eff);
+  effRef.current = eff;
+  useEffect(() => {
+    let alive = true;
+    const run = async () => {
+      const out = await syncResults(MATCHES, effRef.current, GROUPS);
+      if (alive && out.ok && out.filled > 0) applyPatch(out.patch);
+    };
+    run();
+    const id = setInterval(run, 5 * 60_000);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+    // applyPatch es estable (useCallback); effRef siempre tiene el eff actual
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const stats = useMemo(() => tracker(MATCHES, eff), [eff]);
   const liveItems = useMemo<LiveItem[]>(

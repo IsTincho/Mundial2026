@@ -4,6 +4,7 @@
 //
 // Rutas (mismo origen, sin CORS):
 //   /api/af?kind=live              → partidos en vivo del Mundial
+//   /api/af?kind=results           → finalizados del torneo (marcador final)
 //   /api/af?kind=detail&fid=ID     → { events, stats } de un fixture
 //
 // Mundial 2026: league=1, season=2026 en API-Football.
@@ -47,14 +48,17 @@ function num(v) {
   return Number.isNaN(n) ? 0 : n;
 }
 
-async function af(path, key) {
+async function af(path, key, ttl = 20) {
   const res = await fetch(BASE + path, {
     headers: { "x-apisports-key": key },
-    cf: { cacheTtl: 20, cacheEverything: true },
+    cf: { cacheTtl: ttl, cacheEverything: true },
   });
   if (!res.ok) throw new Error("af " + res.status);
   return res.json();
 }
+
+// Estados de "partido terminado" en API-Football.
+const FINISHED = new Set(["FT", "AET", "PEN"]);
 
 export async function onRequestGet({ request, env }) {
   const key = env.API_FOOTBALL_KEY;
@@ -75,6 +79,22 @@ export async function onRequestGet({ request, env }) {
         elapsed: r.fixture?.status?.elapsed ?? null,
         status: r.fixture?.status?.short ?? null,
       }));
+      return json({ matches });
+    }
+
+    if (kind === "results") {
+      // Todos los fixtures del torneo; nos quedamos con los finalizados y su
+      // marcador final. Cache más larga (60s) para cuidar la cuota de la API.
+      const data = await af(`/fixtures?league=${LEAGUE}&season=${SEASON}`, key, 60);
+      const matches = (data.response || [])
+        .filter((r) => FINISHED.has(r.fixture?.status?.short))
+        .map((r) => ({
+          home: r.teams?.home?.name,
+          away: r.teams?.away?.name,
+          hs: r.goals?.home,
+          as: r.goals?.away,
+        }))
+        .filter((m) => m.hs != null && m.as != null);
       return json({ matches });
     }
 
