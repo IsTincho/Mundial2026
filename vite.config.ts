@@ -7,5 +7,11 @@ import react from "@vitejs/plugin-react";
 export default defineConfig({
   base: process.env.PAGES_BASE || "/",
   plugins: [react()],
-  build: { outDir: "dist", sourcemap: false },
+  build: {
+    outDir: "dist",
+    sourcemap: false,
+    // No inlinear las banderas SVG como data-URI: que sean archivos sueltos y
+    // el navegador baje solo las que se muestran (no las ~250 del paquete).
+    assetsInlineLimit: 0,
+  },
 });

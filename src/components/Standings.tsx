@@ -1,5 +1,6 @@
 import type { Match, Results, Team } from "../types";
 import { standings } from "../lib/logic";
+import { Flag } from "./Flag";
 
 export function Standings({
   group,
@@ -29,7 +30,10 @@ export function Standings({
           <div className={"tr " + cls} key={t.name}>
             <span className="pos">{i + 1}</span>
             <div className="tm">
-              <span className="nm">{t.name}</span>
+              <span className="nm">
+                <Flag team={t.name} size="sm" />
+                {t.name}
+              </span>
               <span className="rec">
                 {t.pj} PJ · {t.g}-{t.e}-{t.p}
               </span>

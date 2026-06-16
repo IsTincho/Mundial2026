@@ -1,5 +1,6 @@
 import type { LiveMap, Match, Results } from "../types";
 import { effResult, isLive, verdict } from "../lib/logic";
+import { Flag } from "./Flag";
 
 export function MatchRow({
   m,
@@ -24,11 +25,12 @@ export function MatchRow({
       onClick={() => onOpen(m.id)}
       aria-label={`${m.h} contra ${m.a}, grupo ${m.g}. Tocá para cargar el resultado.`}
     >
-      <span className="acc" />
       <span className="names">
+        <Flag team={m.h} size="sm" />
         <span>{m.h}</span>
         <span className="vs">vs</span>
         <span>{m.a}</span>
+        <Flag team={m.a} size="sm" />
       </span>
       <span className="gtag">{m.g}·F{m.f}</span>
       <span className="sc">
@@ -46,6 +48,7 @@ export function MatchRow({
           </span>
         )}
       </span>
+      <span className="vdot" aria-hidden="true" />
     </button>
   );
 }

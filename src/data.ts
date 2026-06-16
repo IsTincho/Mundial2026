@@ -48,6 +48,23 @@ export const CONFED: Record<string, string> = {
 // Confederaciones presentes, en orden de cantidad de equipos.
 export const CONFEDS = ["UEFA", "CAF", "AFC", "CONMEBOL", "CONCACAF", "OFC"] as const;
 
+// Código ISO de bandera por equipo (flag-icons). Inglaterra/Escocia usan
+// las subdivisiones gb-eng / gb-sct.
+export const CODE: Record<string, string> = {
+  "México": "mx", "Corea del Sur": "kr", "Sudáfrica": "za", "Chequia": "cz",
+  "Suiza": "ch", "Canadá": "ca", "Qatar": "qa", "Bosnia": "ba",
+  "Brasil": "br", "Marruecos": "ma", "Escocia": "gb-sct", "Haití": "ht",
+  "EE.UU.": "us", "Turquía": "tr", "Australia": "au", "Paraguay": "py",
+  "Alemania": "de", "Ecuador": "ec", "Costa de Marfil": "ci", "Curazao": "cw",
+  "Países Bajos": "nl", "Japón": "jp", "Suecia": "se", "Túnez": "tn",
+  "Bélgica": "be", "Irán": "ir", "Egipto": "eg", "Nueva Zelanda": "nz",
+  "España": "es", "Uruguay": "uy", "Arabia Saudita": "sa", "Cabo Verde": "cv",
+  "Francia": "fr", "Senegal": "sn", "Noruega": "no", "Irak": "iq",
+  "Argentina": "ar", "Austria": "at", "Argelia": "dz", "Jordania": "jo",
+  "Portugal": "pt", "Colombia": "co", "RD Congo": "cd", "Uzbekistán": "uz",
+  "Inglaterra": "gb-eng", "Croacia": "hr", "Panamá": "pa", "Ghana": "gh",
+};
+
 type RawMatch = Omit<Match, "id" | "n">;
 
 const RAW: RawMatch[] = [

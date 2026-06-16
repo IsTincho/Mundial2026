@@ -14,6 +14,7 @@ import "@fontsource/jetbrains-mono/500.css";
 import "@fontsource/jetbrains-mono/700.css";
 import "@fontsource/jetbrains-mono/800.css";
 
+import "flag-icons/css/flag-icons.min.css";
 import "./styles.css";
 
 createRoot(document.getElementById("root")!).render(

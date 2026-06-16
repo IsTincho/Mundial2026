@@ -2,6 +2,7 @@ import type { LiveMap, Match, Results } from "../types";
 import { teamMeta } from "../data";
 import { effResult, fmtDate, isLive, verdict } from "../lib/logic";
 import { VerdictTag } from "./Score";
+import { Flag } from "./Flag";
 
 export function MatchCard({
   m,
@@ -30,6 +31,7 @@ export function MatchCard({
       onClick={() => onOpen(m.id)}
       aria-label={`${m.h} contra ${m.a}, grupo ${m.g}, fecha ${m.f}. Tocá para cargar el resultado.`}
     >
+      <span className="foil" aria-hidden="true" />
       <div className="crow">
         <div className="serial">
           <span className="no">№ {serial}</span>
@@ -50,7 +52,10 @@ export function MatchCard({
 
       <div className="match">
         <div className="team home">
-          <span className="nm">{m.h}</span>
+          <div className="teamline">
+            <Flag team={m.h} size="lg" />
+            <span className="nm">{m.h}</span>
+          </div>
           <span className="cf">{teamMeta(m.h)}</span>
         </div>
         <div className="board">
@@ -81,7 +86,10 @@ export function MatchCard({
           </div>
         </div>
         <div className="team away">
-          <span className="nm">{m.a}</span>
+          <div className="teamline">
+            <Flag team={m.a} size="lg" />
+            <span className="nm">{m.a}</span>
+          </div>
           <span className="cf">{teamMeta(m.a)}</span>
         </div>
       </div>

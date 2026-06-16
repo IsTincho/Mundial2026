@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import type { BracketTie, Match, Qualifier, Results, Team } from "../types";
 import { buildBracket, qualifiers, thirdsTable } from "../lib/bracket";
+import { Flag } from "./Flag";
 
 function TeamSlot({ q, adv }: { q: Qualifier | null; adv: boolean }) {
   if (!q) {
@@ -15,6 +16,7 @@ function TeamSlot({ q, adv }: { q: Qualifier | null; adv: boolean }) {
   return (
     <div className={"bteam" + (adv ? " adv" : "")}>
       <span className="sd">{q.seed}</span>
+      <Flag team={q.name} size="sm" />
       <span className="nm">{q.name}</span>
       <span className="gp">
         {q.pos}
@@ -102,7 +104,10 @@ export function Bracket({
           <div className={"tr " + (t.qualifies ? "q" : "out")} key={t.group}>
             <span className="pos">{t.rank}</span>
             <div className="tm">
-              <span className="nm">{t.name}</span>
+              <span className="nm">
+                <Flag team={t.name} size="sm" />
+                {t.name}
+              </span>
               <span className="rec">Grupo {t.group}</span>
             </div>
             <span className="num">{t.gf}</span>
