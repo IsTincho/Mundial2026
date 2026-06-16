@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#11161C">
+  <meta name="description" content="Prode del Mundial 2026 (fase de grupos): fixture de los 72 partidos, pronósticos de un modelo Montecarlo con su confianza, y tabla por grupo que se recalcula a medida que cargás resultados.">
+  <title>Prode · Mundial 2026</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+
+  <!-- ============================ HEADER ============================ -->
+  <header class="topbar">
+    <div class="wrap">
+      <div class="brand">
+        <h1>Prode <span class="dot">·</span> Mundial 2026</h1>
+        <span class="sub">Fase de grupos · 72 partidos</span>
+      </div>
+
+      <!-- Tracker de aciertos (solo sobre partidos con resultado) -->
+      <div class="tracker" id="tracker" aria-label="Resumen de aciertos">
+        <div class="cell" id="tk-win">
+          <span class="k">Ganadores</span>
+          <span class="v">0<small>/0</small></span>
+        </div>
+        <div class="cell" id="tk-exact">
+          <span class="k">Exactos</span>
+          <span class="v">0</span>
+        </div>
+        <div class="cell" id="tk-pct">
+          <span class="k">Aciertos</span>
+          <span class="v">0<small>%</small></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================ TOGGLE ============================ -->
+  <nav class="toggle" aria-label="Cambiar vista">
+    <div class="wrap">
+      <div class="seg" role="group" aria-label="Vista del fixture">
+        <button type="button" data-view="fecha" aria-pressed="true">Por fecha</button>
+        <button type="button" data-view="grupo" aria-pressed="false">Por grupo</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============================ CONTENIDO ============================ -->
+  <main>
+    <div class="wrap">
+      <div id="contenido"><!-- secciones renderizadas por app.js --></div>
+    </div>
+  </main>
+
+  <!-- ============================ FOOTER ============================ -->
+  <footer class="foot">
+    <div class="wrap">
+      <div class="legend">
+        <span>🎯 <b>Exacto</b>: marcador clavado</span>
+        <span>✅ <b>Ganador</b>: acerté G/E/P</span>
+        <span>❌ <b>Fallado</b></span>
+        <span>⏳ <b>Pendiente</b></span>
+        <span>🔴 <b>En vivo</b></span>
+        <span>Tabla: <b>verde</b> clasifican (1º–2º) · <b>ámbar</b> mejor tercero (3º)</span>
+      </div>
+
+      <div class="foot-actions">
+        <button type="button" class="btn" id="btn-sync">Buscar resultados (beta)</button>
+        <button type="button" class="btn ghost" id="btn-reset">Reiniciar todo</button>
+      </div>
+
+      <p class="meta">
+        Datos al 15/06/2026 · Predicciones: modelo Montecarlo.<br>
+        Tocá un partido para cargar o editar su resultado real.
+        Resultados en vivo (beta) vía <a href="https://www.thesportsdb.com" target="_blank" rel="noopener">TheSportsDB</a>.
+      </p>
+    </div>
+  </footer>
+
+  <!-- ============================ EDITOR (dialog) ============================ -->
+  <dialog id="editor" aria-labelledby="ed-title">
+    <form method="dialog" id="ed-form">
+      <h2 id="ed-title">Partido</h2>
+      <p class="ed-sub" id="ed-sub">—</p>
+
+      <div class="ed-grid">
+        <label class="ed-team">
+          <span id="ed-home-name">Local</span>
+          <input id="ed-home" type="number" inputmode="numeric" min="0" max="99" step="1"
+                 placeholder="–" aria-label="Goles del local">
+        </label>
+        <span class="ed-dash">:</span>
+        <label class="ed-team">
+          <span id="ed-away-name">Visita</span>
+          <input id="ed-away" type="number" inputmode="numeric" min="0" max="99" step="1"
+                 placeholder="–" aria-label="Goles de la visita">
+        </label>
+      </div>
+
+      <p class="ed-pred" id="ed-pred">Tu pronóstico: <b>–:–</b></p>
+      <p class="ed-hint" id="ed-hint" role="alert" aria-live="polite"></p>
+
+      <div class="ed-actions">
+        <button type="button" class="btn ghost" id="ed-reset" data-mode="none">Sin dato cargado</button>
+        <div class="ed-actions-right">
+          <button type="button" class="btn" id="ed-cancel">Cancelar</button>
+          <button type="submit" class="btn primary" id="ed-save">Guardar</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ============================ TOAST ============================ -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,1214 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#11161C">
+  <meta name="description" content="Prode del Mundial 2026 (fase de grupos): fixture de los 72 partidos, pronósticos de un modelo Montecarlo con su confianza, y tabla por grupo que se recalcula a medida que cargás resultados.">
+  <title>Prode · Mundial 2026</title>
+  <style>
+/* ============================================================================
+   styles.css — Prode Mundial 2026
+   Concepto: "tablero de estadio de noche" (scoreboard).
+   La audacia vive en los numerales ámbar tipo dot-matrix y en los chips de
+   veredicto. Todo lo demás, sobrio y silencioso.
+   ============================================================================ */
+
+:root {
+  /* Paleta (tokens del brief) */
+  --bg:    #11161C;
+  --panel: #1A2129;
+  --line:  #2A333D;
+  --ink:   #E8EDF2;
+  --muted: #8A97A6;
+  --amber: #FFB627;  /* scoreboard / confianza */
+  --hit:   #3DD68C;  /* acierto */
+  --miss:  #FF5C5C;  /* fallo */
+  --live:  #FF4D6D;  /* en vivo (pulso) */
+
+  /* Tintes suaves derivados */
+  --amber-soft: rgba(255, 182, 39, .14);
+  --hit-soft:   rgba(61, 214, 140, .14);
+  --miss-soft:  rgba(255, 92, 92, .14);
+  --live-soft:  rgba(255, 77, 109, .16);
+  --readout-bg: #0D1217;
+
+  --radius: 14px;
+  --maxw: 600px;
+  --mono: ui-monospace, "SF Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(120% 60% at 50% -10%, #151C24 0%, var(--bg) 60%) fixed,
+    var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
+}
+
+button { font: inherit; color: inherit; }
+
+.wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 14px; }
+
+/* Saltar al contenido (accesibilidad de teclado) */
+.skip {
+  position: absolute; left: -9999px; top: 0; z-index: 60;
+  background: var(--amber); color: #06090C; font-weight: 700;
+  padding: .55rem .85rem; border-radius: 0 0 10px 0;
+}
+.skip:focus { left: 0; }
+
+/* Foco visible y consistente en toda la app */
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ============================ TOP BAR ============================ */
+.topbar { border-bottom: 1px solid var(--line); }
+.topbar .wrap { padding-top: 14px; padding-bottom: 12px; }
+
+.brand { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; margin-bottom: 12px; }
+.brand h1 {
+  margin: 0; font-size: .98rem; font-weight: 800;
+  letter-spacing: .16em; text-transform: uppercase;
+}
+.brand h1 .dot { color: var(--live); }
+.brand .sub { color: var(--muted); font-size: .72rem; letter-spacing: .06em; }
+
+/* Tracker: tres lecturas tipo display LED */
+.tracker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cell {
+  position: relative; overflow: hidden;
+  background: var(--readout-bg);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 9px 8px 8px;
+  text-align: center;
+}
+.cell::after { /* textura dot-matrix sutil */
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .07;
+  background-image: radial-gradient(var(--amber) 1px, transparent 1.5px);
+  background-size: 6px 6px;
+}
+.cell .k {
+  display: block; position: relative; z-index: 1;
+  font-size: .6rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 3px;
+}
+.cell .v {
+  position: relative; z-index: 1;
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-weight: 700; font-size: 1.4rem; line-height: 1; color: var(--amber);
+  text-shadow: 0 0 10px rgba(255, 182, 39, .35);
+}
+.cell .v small {
+  font-family: var(--sans); font-size: .6rem; font-weight: 600;
+  color: var(--muted); text-shadow: none; letter-spacing: .02em;
+}
+
+/* ============================ TOGGLE (sticky) ============================ */
+.toggle {
+  position: sticky; top: 0; z-index: 30;
+  background: linear-gradient(180deg, rgba(17, 22, 28, .97), rgba(17, 22, 28, .9));
+  backdrop-filter: saturate(140%) blur(8px);
+  -webkit-backdrop-filter: saturate(140%) blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.toggle .wrap {
+  padding-top: 10px; padding-bottom: 10px;
+  display: flex; justify-content: center;
+}
+.seg {
+  display: inline-flex; gap: 3px; padding: 3px;
+  background: var(--readout-bg); border: 1px solid var(--line); border-radius: 11px;
+}
+.seg button {
+  border: 0; background: transparent; color: var(--muted); cursor: pointer;
+  padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: .86rem;
+  letter-spacing: .01em; transition: color .15s, background .15s, box-shadow .15s;
+}
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"] {
+  color: var(--ink); background: var(--panel);
+  box-shadow: inset 0 0 0 1px var(--line), inset 0 -2px 0 var(--amber);
+}
+
+/* ============================ MAIN / SECTIONS ============================ */
+main { padding-top: 18px; }
+
+section { margin-bottom: 26px; }
+.sec-h {
+  display: flex; align-items: center; gap: 10px; margin: 0 0 12px;
+}
+.sec-h h2 {
+  margin: 0; font-size: 1.02rem; font-weight: 800;
+  letter-spacing: .07em; text-transform: uppercase;
+}
+.sec-h .tick { width: 22px; height: 2px; background: var(--amber); border-radius: 2px; }
+.sec-h .sec-sub { color: var(--muted); font-size: .76rem; margin-left: auto; }
+
+/* ============================ STANDINGS ============================ */
+.standings {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden; margin-bottom: 14px;
+}
+.st-head, .st-row {
+  display: grid;
+  grid-template-columns: 26px 1fr 42px 34px;
+  align-items: center; gap: 8px;
+  padding: 9px 12px;
+}
+.st-head {
+  color: var(--muted); font-size: .62rem; letter-spacing: .1em; text-transform: uppercase;
+  border-bottom: 1px solid var(--line); background: var(--readout-bg);
+}
+.st-head .r { text-align: center; }
+.st-row { border-top: 1px solid var(--line); position: relative; }
+.st-row:first-of-type { border-top: 0; }
+.st-pos {
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  font-weight: 700; text-align: center; color: var(--muted);
+}
+.st-team { min-width: 0; }
+.st-name { font-weight: 700; font-size: .92rem; }
+.st-rec { display: block; color: var(--muted); font-size: .68rem; margin-top: 1px; }
+.st-dg {
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  text-align: center; font-size: .86rem; color: var(--ink);
+}
+.st-pts {
+  font-family: var(--mono); font-variant-numeric: tabular-nums;
+  text-align: center; font-weight: 700; font-size: 1.05rem; color: var(--amber);
+}
+
+/* Posición 1–2: clasifican. Posición 3: candidato a mejor tercero. */
+.st-row.q { background: linear-gradient(90deg, var(--hit-soft), transparent 55%); }
+.st-row.q::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--hit);
+}
+.st-row.q .st-pos { color: var(--hit); }
+.st-row.third::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: repeating-linear-gradient(180deg, var(--amber) 0 4px, transparent 4px 8px);
+}
+.st-row.third .st-pos { color: var(--amber); }
+.st-row.out { opacity: .72; }
+
+/* ============================ TICKETS ============================ */
+.tickets { display: grid; gap: 12px; }
+
+.ticket {
+  position: relative; overflow: hidden; width: 100%; text-align: left; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 13px 14px 14px;
+  display: block;
+  transition: border-color .15s, transform .06s;
+}
+.ticket:hover { border-color: #3A4654; }
+.ticket:active { transform: scale(.997); }
+
+/* Acento lateral por veredicto (sobrio: barra finita a la izquierda) */
+.ticket::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--line);
+}
+.ticket.v-exact::before  { background: var(--hit); }
+.ticket.v-winner::before { background: color-mix(in srgb, var(--hit) 60%, var(--line)); }
+.ticket.v-miss::before   { background: var(--miss); }
+.ticket.v-live::before   { background: var(--live); }
+
+.t-meta { display: flex; align-items: center; gap: 8px; }
+.tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+.tag {
+  font-size: .64rem; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+  padding: 2px 7px; white-space: nowrap;
+}
+.tag.grp { color: var(--ink); border-color: #3A4654; }
+
+/* Perforación de ticket */
+.t-perf {
+  position: relative; height: 1px; margin: 11px -14px;
+  border-top: 1px dashed var(--line);
+}
+.t-perf::before, .t-perf::after {
+  content: ""; position: absolute; top: 50%; transform: translateY(-50%);
+  width: 12px; height: 12px; border-radius: 50%; background: var(--bg);
+}
+.t-perf::before { left: -6px; }
+.t-perf::after  { right: -6px; }
+
+.t-teams {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.team { font-weight: 700; font-size: .96rem; flex: 1; min-width: 0; }
+.team.home { text-align: right; }
+.team.away { text-align: left; }
+.t-teams .vs {
+  color: var(--muted); font-size: .68rem; text-transform: uppercase; letter-spacing: .08em;
+  flex: 0 0 auto;
+}
+
+/* Tablero: Mi prode (ámbar) | Real */
+.t-board {
+  display: grid; grid-template-columns: 1fr 1px 1fr; align-items: center;
+  background: var(--readout-bg); border: 1px solid var(--line); border-radius: 10px;
+  padding: 9px 6px; margin-bottom: 11px; position: relative; overflow: hidden;
+}
+.t-board::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .05;
+  background-image: radial-gradient(var(--ink) 1px, transparent 1.5px);
+  background-size: 7px 7px;
+}
+.read { text-align: center; position: relative; z-index: 1; }
+.read .rk {
+  display: block; font-size: .58rem; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 3px;
+}
+.bdiv { width: 1px; align-self: stretch; background: var(--line); }
+
+.score {
+  font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 700;
+  font-size: clamp(1.5rem, 8.5vw, 2.05rem); line-height: 1; letter-spacing: .03em;
+  white-space: nowrap;
+}
+.score .sep { color: var(--muted); margin: 0 .12em; font-weight: 500; }
+.score.amber { color: var(--amber); text-shadow: 0 0 11px rgba(255, 182, 39, .4); }
+.score.ink   { color: var(--ink); }
+.read .pend { font-family: var(--mono); font-size: 1.7rem; color: var(--muted); }
+.read .live-now {
+  display: inline-block; font-size: .8rem; font-weight: 800; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--live);
+}
+.read .live-now::before {
+  content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--live); margin-right: 6px; vertical-align: middle;
+  box-shadow: 0 0 8px var(--live); animation: pulse 1.25s ease-in-out infinite;
+}
+
+/* Barra de confianza */
+.t-conf { display: flex; align-items: center; gap: 9px; }
+.t-conf .cl {
+  font-size: .6rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+  flex: 0 0 auto;
+}
+.t-conf .bar {
+  flex: 1; height: 5px; border-radius: 999px; background: var(--line); overflow: hidden;
+}
+.t-conf .fill {
+  display: block; height: 100%; border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--amber) 70%, #B97E10), var(--amber));
+  box-shadow: 0 0 8px rgba(255, 182, 39, .35);
+}
+.t-conf .cv {
+  font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 700;
+  font-size: .82rem; color: var(--amber); flex: 0 0 auto; min-width: 2.4ch; text-align: right;
+}
+
+/* ============================ CHIPS (veredicto) ============================ */
+.chip {
+  margin-left: auto; flex: 0 0 auto;
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: .68rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  padding: 4px 9px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap;
+}
+.chip.exact   { background: var(--hit); color: #06140D; }
+.chip.winner  { background: var(--hit-soft); color: var(--hit); border-color: color-mix(in srgb, var(--hit) 40%, transparent); }
+.chip.miss    { background: var(--miss-soft); color: var(--miss); border-color: color-mix(in srgb, var(--miss) 40%, transparent); }
+.chip.pending { background: transparent; color: var(--muted); border-color: var(--line); }
+.chip.live    { background: var(--live-soft); color: var(--live); border-color: color-mix(in srgb, var(--live) 45%, transparent); }
+.chip.live .pulse {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--live);
+  box-shadow: 0 0 7px var(--live); animation: pulse 1.25s ease-in-out infinite;
+}
+
+/* ============================ FOOTER ============================ */
+.foot { border-top: 1px solid var(--line); margin-top: 8px; }
+.foot .wrap { padding-top: 18px; padding-bottom: 22px; }
+.legend {
+  display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted);
+  font-size: .74rem; margin-bottom: 14px;
+}
+.legend b { color: var(--ink); font-weight: 600; }
+.foot-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.btn {
+  border: 1px solid var(--line); background: var(--panel); color: var(--ink); cursor: pointer;
+  padding: 9px 14px; border-radius: 10px; font-weight: 600; font-size: .84rem;
+  transition: border-color .15s, background .15s;
+}
+.btn:hover { border-color: #3A4654; }
+.btn.primary { background: var(--amber); color: #06090C; border-color: var(--amber); }
+.btn.primary:hover { filter: brightness(1.05); }
+.btn.ghost { background: transparent; color: var(--muted); }
+.btn.ghost:hover { color: var(--ink); }
+.btn[disabled] { opacity: .55; cursor: default; }
+.foot .meta { color: var(--muted); font-size: .72rem; line-height: 1.6; }
+.foot .meta a { color: var(--amber); text-decoration: none; }
+.foot .meta a:hover { text-decoration: underline; }
+
+/* ============================ DIALOG (editor) ============================ */
+dialog#editor {
+  border: 1px solid var(--line); border-radius: 16px; padding: 0;
+  background: var(--panel); color: var(--ink); width: min(420px, 92vw);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+}
+dialog#editor::backdrop { background: rgba(6, 9, 12, .68); backdrop-filter: blur(2px); }
+#ed-form { padding: 18px; }
+#ed-title { margin: 0 0 2px; font-size: 1.05rem; font-weight: 800; letter-spacing: .02em; }
+.ed-sub { margin: 0 0 14px; color: var(--muted); font-size: .78rem; }
+.ed-grid {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 10px;
+  margin-bottom: 6px;
+}
+.ed-team { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.ed-team > span {
+  font-size: .72rem; font-weight: 700; text-align: center; color: var(--ink);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ed-team input {
+  width: 100%; text-align: center; background: var(--readout-bg); color: var(--amber);
+  border: 1px solid var(--line); border-radius: 10px; padding: 12px 6px;
+  font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 700;
+  font-size: 1.7rem; -moz-appearance: textfield;
+}
+.ed-team input::-webkit-outer-spin-button,
+.ed-team input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.ed-dash { color: var(--muted); font-size: 1.6rem; padding-bottom: 12px; }
+.ed-pred { margin: 10px 0 0; color: var(--muted); font-size: .78rem; }
+.ed-pred b { color: var(--amber); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.ed-hint { margin: 8px 0 0; color: var(--miss); font-size: .76rem; min-height: 1.1em; }
+.ed-actions {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 16px;
+}
+.ed-actions-right { display: flex; gap: 8px; }
+
+/* ============================ TOAST ============================ */
+#toast {
+  position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 18px);
+  transform: translateX(-50%) translateY(14px);
+  background: #05080B; color: var(--ink); border: 1px solid var(--line);
+  border-radius: 999px; padding: 9px 16px; font-size: .82rem; font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .5);
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 70;
+  max-width: 90vw; text-align: center;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ============================ ANIMACIONES ============================ */
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: .35; transform: scale(.82); }
+}
+
+/* ============================ WIDE SCREENS ============================ */
+@media (min-width: 720px) {
+  :root { --maxw: 860px; }
+  .tickets { grid-template-columns: 1fr 1fr; }
+}
+
+/* ============================ REDUCED MOTION ============================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .read .live-now::before, .chip.live .pulse { animation: none !important; opacity: 1; }
+}
+
+</style>
+</head>
+<body>
+  <a class="skip" href="#contenido">Saltar al contenido</a>
+
+  <!-- ============================ HEADER ============================ -->
+  <header class="topbar">
+    <div class="wrap">
+      <div class="brand">
+        <h1>Prode <span class="dot">·</span> Mundial 2026</h1>
+        <span class="sub">Fase de grupos · 72 partidos</span>
+      </div>
+
+      <!-- Tracker de aciertos (solo sobre partidos con resultado) -->
+      <div class="tracker" id="tracker" aria-label="Resumen de aciertos">
+        <div class="cell" id="tk-win">
+          <span class="k">Ganadores</span>
+          <span class="v">0<small>/0</small></span>
+        </div>
+        <div class="cell" id="tk-exact">
+          <span class="k">Exactos</span>
+          <span class="v">0</span>
+        </div>
+        <div class="cell" id="tk-pct">
+          <span class="k">Aciertos</span>
+          <span class="v">0<small>%</small></span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ============================ TOGGLE ============================ -->
+  <nav class="toggle" aria-label="Cambiar vista">
+    <div class="wrap">
+      <div class="seg" role="group" aria-label="Vista del fixture">
+        <button type="button" data-view="fecha" aria-pressed="true">Por fecha</button>
+        <button type="button" data-view="grupo" aria-pressed="false">Por grupo</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ============================ CONTENIDO ============================ -->
+  <main>
+    <div class="wrap">
+      <div id="contenido"><!-- secciones renderizadas por app.js --></div>
+    </div>
+  </main>
+
+  <!-- ============================ FOOTER ============================ -->
+  <footer class="foot">
+    <div class="wrap">
+      <div class="legend">
+        <span>🎯 <b>Exacto</b>: marcador clavado</span>
+        <span>✅ <b>Ganador</b>: acerté G/E/P</span>
+        <span>❌ <b>Fallado</b></span>
+        <span>⏳ <b>Pendiente</b></span>
+        <span>🔴 <b>En vivo</b></span>
+        <span>Tabla: <b>verde</b> clasifican (1º–2º) · <b>ámbar</b> mejor tercero (3º)</span>
+      </div>
+
+      <div class="foot-actions">
+        <button type="button" class="btn" id="btn-sync">Buscar resultados (beta)</button>
+        <button type="button" class="btn ghost" id="btn-reset">Reiniciar todo</button>
+      </div>
+
+      <p class="meta">
+        Datos al 15/06/2026 · Predicciones: modelo Montecarlo.<br>
+        Tocá un partido para cargar o editar su resultado real.
+        Resultados en vivo (beta) vía <a href="https://www.thesportsdb.com" target="_blank" rel="noopener">TheSportsDB</a>.
+      </p>
+    </div>
+  </footer>
+
+  <!-- ============================ EDITOR (dialog) ============================ -->
+  <dialog id="editor" aria-labelledby="ed-title">
+    <form method="dialog" id="ed-form">
+      <h2 id="ed-title">Partido</h2>
+      <p class="ed-sub" id="ed-sub">—</p>
+
+      <div class="ed-grid">
+        <label class="ed-team">
+          <span id="ed-home-name">Local</span>
+          <input id="ed-home" type="number" inputmode="numeric" min="0" max="99" step="1"
+                 placeholder="–" aria-label="Goles del local">
+        </label>
+        <span class="ed-dash">:</span>
+        <label class="ed-team">
+          <span id="ed-away-name">Visita</span>
+          <input id="ed-away" type="number" inputmode="numeric" min="0" max="99" step="1"
+                 placeholder="–" aria-label="Goles de la visita">
+        </label>
+      </div>
+
+      <p class="ed-pred" id="ed-pred">Tu pronóstico: <b>–:–</b></p>
+      <p class="ed-hint" id="ed-hint" role="alert" aria-live="polite"></p>
+
+      <div class="ed-actions">
+        <button type="button" class="btn ghost" id="ed-reset" data-mode="none">Sin dato cargado</button>
+        <div class="ed-actions-right">
+          <button type="button" class="btn" id="ed-cancel">Cancelar</button>
+          <button type="submit" class="btn primary" id="ed-save">Guardar</button>
+        </div>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ============================ TOAST ============================ -->
+  <div id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+/* ============================================================================
+   data.js — Datos semilla del Prode Mundial 2026 (fase de grupos)
+   ----------------------------------------------------------------------------
+   Las predicciones salen de una simulación Montecarlo recalibrada con la forma
+   real de la Fecha 1 (que fue rarísima: ~40% de empates). Los partidos con
+   confianza < 6 son candidatos fuertes a empate.
+
+   Esquema de cada partido:
+     g    -> grupo (A..L)
+     f    -> fecha / jornada (1, 2, 3)
+     d    -> fecha calendario (ISO, YYYY-MM-DD)
+     h, a -> local, visita (nombres en español)
+     p    -> pronóstico [local, visita]
+     c    -> confianza del modelo (0–10)
+     r    -> resultado real [local, visita] o null si no se jugó/cargó
+     live -> true si el partido está en juego (sin resultado final)
+   ============================================================================ */
+
+window.PRODE_DATA = {
+  updated: "2026-06-15",
+
+  // Listado oficial de cada grupo: [nombre, ranking mundial].
+  // El ranking es informativo y se usa solo como criterio de orden estable
+  // cuando dos equipos empatan en puntos, DG y GF (ver app.js).
+  groups: {
+    A: [["México", 16], ["Corea del Sur", 22], ["Sudáfrica", 60], ["Chequia", 43]],
+    B: [["Suiza", 18], ["Canadá", 29], ["Qatar", 56], ["Bosnia", 71]],
+    C: [["Brasil", 5], ["Marruecos", 8], ["Escocia", 38], ["Haití", 83]],
+    D: [["EE.UU.", 15], ["Turquía", 25], ["Australia", 27], ["Paraguay", 40]],
+    E: [["Alemania", 10], ["Ecuador", 23], ["Costa de Marfil", 37], ["Curazao", 81]],
+    F: [["Países Bajos", 7], ["Japón", 19], ["Suecia", 42], ["Túnez", 47]],
+    G: [["Bélgica", 9], ["Irán", 20], ["Egipto", 31], ["Nueva Zelanda", 85]],
+    H: [["España", 1], ["Uruguay", 17], ["Arabia Saudita", 61], ["Cabo Verde", 67]],
+    I: [["Francia", 3], ["Senegal", 12], ["Noruega", 32], ["Irak", 58]],
+    J: [["Argentina", 2], ["Austria", 24], ["Argelia", 28], ["Jordania", 64]],
+    K: [["Portugal", 6], ["Colombia", 14], ["RD Congo", 48], ["Uzbekistán", 52]],
+    L: [["Inglaterra", 4], ["Croacia", 11], ["Panamá", 33], ["Ghana", 72]]
+  },
+
+  matches: [
+    // ---- Grupo A ----
+    { g: "A", f: 1, d: "2026-06-11", h: "México", a: "Sudáfrica", p: [2, 0], c: 8.0, r: [2, 0] },
+    { g: "A", f: 1, d: "2026-06-12", h: "Corea del Sur", a: "Chequia", p: [2, 1], c: 5.3, r: [2, 1] },
+    { g: "A", f: 2, d: "2026-06-18", h: "Chequia", a: "Sudáfrica", p: [1, 0], c: 4.6, r: null },
+    { g: "A", f: 2, d: "2026-06-18", h: "México", a: "Corea del Sur", p: [1, 0], c: 5.2, r: null },
+    { g: "A", f: 3, d: "2026-06-25", h: "Chequia", a: "México", p: [0, 1], c: 6.6, r: null },
+    { g: "A", f: 3, d: "2026-06-25", h: "Sudáfrica", a: "Corea del Sur", p: [0, 1], c: 6.0, r: null },
+
+    // ---- Grupo B ----
+    { g: "B", f: 1, d: "2026-06-12", h: "Canadá", a: "Bosnia", p: [1, 1], c: 4.8, r: [1, 1] },
+    { g: "B", f: 1, d: "2026-06-13", h: "Qatar", a: "Suiza", p: [0, 2], c: 7.5, r: [1, 1] },
+    { g: "B", f: 2, d: "2026-06-18", h: "Suiza", a: "Bosnia", p: [1, 0], c: 5.6, r: null },
+    { g: "B", f: 2, d: "2026-06-18", h: "Canadá", a: "Qatar", p: [2, 0], c: 6.6, r: null },
+    { g: "B", f: 3, d: "2026-06-24", h: "Suiza", a: "Canadá", p: [0, 1], c: 4.2, r: null },
+    { g: "B", f: 3, d: "2026-06-24", h: "Bosnia", a: "Qatar", p: [1, 0], c: 4.1, r: null },
+
+    // ---- Grupo C ----
+    { g: "C", f: 1, d: "2026-06-13", h: "Brasil", a: "Marruecos", p: [2, 1], c: 4.5, r: [1, 1] },
+    { g: "C", f: 1, d: "2026-06-14", h: "Haití", a: "Escocia", p: [0, 1], c: 6.3, r: [0, 1] },
+    { g: "C", f: 2, d: "2026-06-19", h: "Brasil", a: "Haití", p: [2, 0], c: 8.7, r: null },
+    { g: "C", f: 2, d: "2026-06-19", h: "Escocia", a: "Marruecos", p: [0, 2], c: 6.6, r: null },
+    { g: "C", f: 3, d: "2026-06-24", h: "Escocia", a: "Brasil", p: [0, 2], c: 6.8, r: null },
+    { g: "C", f: 3, d: "2026-06-24", h: "Marruecos", a: "Haití", p: [2, 0], c: 8.5, r: null },
+
+    // ---- Grupo D ----
+    { g: "D", f: 1, d: "2026-06-13", h: "EE.UU.", a: "Paraguay", p: [2, 0], c: 5.6, r: [4, 1] },
+    { g: "D", f: 1, d: "2026-06-14", h: "Australia", a: "Turquía", p: [1, 2], c: 4.1, r: [2, 0] },
+    { g: "D", f: 2, d: "2026-06-19", h: "EE.UU.", a: "Australia", p: [1, 0], c: 4.8, r: null },
+    { g: "D", f: 2, d: "2026-06-20", h: "Turquía", a: "Paraguay", p: [1, 0], c: 4.6, r: null },
+    { g: "D", f: 3, d: "2026-06-26", h: "Turquía", a: "EE.UU.", p: [0, 1], c: 6.1, r: null },
+    { g: "D", f: 3, d: "2026-06-26", h: "Paraguay", a: "Australia", p: [0, 1], c: 5.9, r: null },
+
+    // ---- Grupo E ----
+    { g: "E", f: 1, d: "2026-06-14", h: "Alemania", a: "Curazao", p: [3, 0], c: 9.4, r: [7, 1] },
+    { g: "E", f: 1, d: "2026-06-14", h: "Costa de Marfil", a: "Ecuador", p: [1, 0], c: 4.0, r: [1, 0] },
+    { g: "E", f: 2, d: "2026-06-20", h: "Alemania", a: "Costa de Marfil", p: [1, 0], c: 6.4, r: null },
+    { g: "E", f: 2, d: "2026-06-20", h: "Ecuador", a: "Curazao", p: [2, 0], c: 8.1, r: null },
+    { g: "E", f: 3, d: "2026-06-25", h: "Curazao", a: "Costa de Marfil", p: [0, 2], c: 8.3, r: null },
+    { g: "E", f: 3, d: "2026-06-25", h: "Ecuador", a: "Alemania", p: [0, 2], c: 6.6, r: null },
+
+    // ---- Grupo F ----
+    { g: "F", f: 1, d: "2026-06-14", h: "Países Bajos", a: "Japón", p: [2, 1], c: 5.7, r: [2, 2] },
+    { g: "F", f: 1, d: "2026-06-14", h: "Suecia", a: "Túnez", p: [1, 0], c: 5.5, r: [5, 1] },
+    { g: "F", f: 2, d: "2026-06-20", h: "Países Bajos", a: "Suecia", p: [1, 0], c: 4.9, r: null },
+    { g: "F", f: 2, d: "2026-06-20", h: "Túnez", a: "Japón", p: [0, 2], c: 7.2, r: null },
+    { g: "F", f: 3, d: "2026-06-26", h: "Túnez", a: "Países Bajos", p: [0, 2], c: 7.8, r: null },
+    { g: "F", f: 3, d: "2026-06-26", h: "Japón", a: "Suecia", p: [1, 0], c: 4.2, r: null },
+
+    // ---- Grupo G ----
+    { g: "G", f: 1, d: "2026-06-15", h: "Bélgica", a: "Egipto", p: [1, 0], c: 6.3, r: [1, 1] },
+    { g: "G", f: 1, d: "2026-06-15", h: "Irán", a: "Nueva Zelanda", p: [2, 0], c: 7.7, r: null, live: true },
+    { g: "G", f: 2, d: "2026-06-21", h: "Bélgica", a: "Irán", p: [1, 0], c: 5.3, r: null },
+    { g: "G", f: 2, d: "2026-06-21", h: "Nueva Zelanda", a: "Egipto", p: [0, 2], c: 6.8, r: null },
+    { g: "G", f: 3, d: "2026-06-27", h: "Nueva Zelanda", a: "Bélgica", p: [0, 2], c: 7.9, r: null },
+    { g: "G", f: 3, d: "2026-06-27", h: "Egipto", a: "Irán", p: [1, 0], c: 3.9, r: null },
+
+    // ---- Grupo H ----
+    { g: "H", f: 1, d: "2026-06-15", h: "España", a: "Cabo Verde", p: [3, 0], c: 9.3, r: [0, 0] },
+    { g: "H", f: 1, d: "2026-06-15", h: "Arabia Saudita", a: "Uruguay", p: [0, 2], c: 7.2, r: [1, 1] },
+    { g: "H", f: 2, d: "2026-06-21", h: "Uruguay", a: "Cabo Verde", p: [2, 0], c: 7.2, r: null },
+    { g: "H", f: 2, d: "2026-06-21", h: "España", a: "Arabia Saudita", p: [2, 0], c: 8.3, r: null },
+    { g: "H", f: 3, d: "2026-06-27", h: "Cabo Verde", a: "Arabia Saudita", p: [0, 1], c: 4.6, r: null },
+    { g: "H", f: 3, d: "2026-06-27", h: "Uruguay", a: "España", p: [0, 1], c: 6.1, r: null },
+
+    // ---- Grupo I ----
+    { g: "I", f: 1, d: "2026-06-16", h: "Francia", a: "Senegal", p: [1, 0], c: 6.3, r: null },
+    { g: "I", f: 1, d: "2026-06-16", h: "Irak", a: "Noruega", p: [0, 1], c: 6.3, r: null },
+    { g: "I", f: 2, d: "2026-06-22", h: "Noruega", a: "Senegal", p: [0, 1], c: 4.4, r: null },
+    { g: "I", f: 2, d: "2026-06-22", h: "Francia", a: "Irak", p: [2, 0], c: 8.8, r: null },
+    { g: "I", f: 3, d: "2026-06-26", h: "Noruega", a: "Francia", p: [0, 2], c: 7.0, r: null },
+    { g: "I", f: 3, d: "2026-06-26", h: "Senegal", a: "Irak", p: [2, 0], c: 7.0, r: null },
+
+    // ---- Grupo J ----
+    { g: "J", f: 1, d: "2026-06-16", h: "Argentina", a: "Argelia", p: [2, 0], c: 8.4, r: null },
+    { g: "J", f: 1, d: "2026-06-17", h: "Austria", a: "Jordania", p: [1, 0], c: 6.4, r: null },
+    { g: "J", f: 2, d: "2026-06-22", h: "Argentina", a: "Austria", p: [2, 0], c: 7.9, r: null },
+    { g: "J", f: 2, d: "2026-06-23", h: "Jordania", a: "Argelia", p: [0, 1], c: 5.6, r: null },
+    { g: "J", f: 3, d: "2026-06-28", h: "Argelia", a: "Austria", p: [0, 1], c: 4.5, r: null },
+    { g: "J", f: 3, d: "2026-06-28", h: "Jordania", a: "Argentina", p: [0, 3], c: 9.4, r: null },
+
+    // ---- Grupo K ----
+    { g: "K", f: 1, d: "2026-06-17", h: "Portugal", a: "RD Congo", p: [2, 0], c: 7.8, r: null },
+    { g: "K", f: 1, d: "2026-06-17", h: "Uzbekistán", a: "Colombia", p: [0, 2], c: 7.0, r: null },
+    { g: "K", f: 2, d: "2026-06-23", h: "Portugal", a: "Uzbekistán", p: [2, 0], c: 8.1, r: null },
+    { g: "K", f: 2, d: "2026-06-24", h: "Colombia", a: "RD Congo", p: [1, 0], c: 6.5, r: null },
+    { g: "K", f: 3, d: "2026-06-28", h: "Colombia", a: "Portugal", p: [0, 1], c: 5.1, r: null },
+    { g: "K", f: 3, d: "2026-06-28", h: "RD Congo", a: "Uzbekistán", p: [1, 0], c: 4.1, r: null },
+
+    // ---- Grupo L ----
+    { g: "L", f: 1, d: "2026-06-17", h: "Inglaterra", a: "Croacia", p: [1, 0], c: 5.2, r: null },
+    { g: "L", f: 1, d: "2026-06-17", h: "Ghana", a: "Panamá", p: [0, 1], c: 3.7, r: null },
+    { g: "L", f: 2, d: "2026-06-23", h: "Inglaterra", a: "Ghana", p: [2, 0], c: 7.8, r: null },
+    { g: "L", f: 2, d: "2026-06-23", h: "Panamá", a: "Croacia", p: [0, 1], c: 6.6, r: null },
+    { g: "L", f: 3, d: "2026-06-27", h: "Panamá", a: "Inglaterra", p: [0, 2], c: 7.7, r: null },
+    { g: "L", f: 3, d: "2026-06-27", h: "Croacia", a: "Ghana", p: [1, 0], c: 6.5, r: null }
+  ]
+};
+
+</script>
+  <script>
+/* ============================================================================
+   app.js — Prode Mundial 2026 (fase de grupos)
+   ----------------------------------------------------------------------------
+   Vanilla JS, sin frameworks ni dependencias. El estado en memoria manda; el
+   localStorage es solo persistencia (envuelto en try/catch para que degrade
+   sin romper si está bloqueado, p. ej. en un sandbox de vista previa).
+
+   Estructura:
+     - Estado + persistencia (loadResults / saveResults)
+     - Lógica de resultado (effResult / isLive / verdict)
+     - Cálculos (tracker / standings)
+     - Render (tickets, tabla, secciones por fecha o por grupo)
+     - Editor (carga manual de resultados con <dialog> nativo)
+     - Sync opcional con TheSportsDB (beta, defensivo, solo rellena pendientes)
+   ============================================================================ */
+(function () {
+  "use strict";
+
+  /* ----------------------------- Datos ----------------------------------- */
+  var DATA    = window.PRODE_DATA || { updated: "", groups: {}, matches: [] };
+  var GROUPS  = DATA.groups;
+  var MATCHES = DATA.matches;
+  var STORAGE_KEY = "prode2026:results";
+
+  // id estable por partido: "G-F-Local-Visita"
+  MATCHES.forEach(function (m) { m.id = m.g + "-" + m.f + "-" + m.h + "-" + m.a; });
+
+  /* --------------------------- Helpers DOM -------------------------------- */
+  function byId(id) { return document.getElementById(id); }
+  function qs(sel, root) { return (root || document).querySelector(sel); }
+  function el(tag, cls, html) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (html != null) n.innerHTML = html;
+    return n;
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  /* ------------------------------ Estado ---------------------------------- */
+  var view = "fecha";        // 'fecha' | 'grupo'
+  var results = loadResults(); // mapa { matchId: [local, visita] }
+  var editId = null;         // partido abierto en el editor
+
+  function loadResults() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return {};
+      var obj = JSON.parse(raw);
+      return (obj && typeof obj === "object") ? obj : {};
+    } catch (e) { return {}; }
+  }
+  function saveResults() {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(results)); }
+    catch (e) { /* almacenamiento bloqueado: seguimos solo en memoria */ }
+  }
+  function hasUser(m) { return Object.prototype.hasOwnProperty.call(results, m.id); }
+
+  /* -------------------------- Lógica resultado ---------------------------- */
+  // Resultado efectivo: la carga del usuario pisa la semilla; si no, la semilla.
+  function effResult(m) { return hasUser(m) ? results[m.id] : m.r; }
+  // En vivo solo si la semilla lo marca y nadie cargó nada todavía.
+  function isLive(m) { return !!m.live && !hasUser(m) && m.r == null; }
+
+  function sign(a, b) { return a > b ? 1 : (a < b ? -1 : 0); }
+  function verdict(m) {
+    if (isLive(m)) return "live";
+    var r = effResult(m);
+    if (!r) return "pending";
+    if (r[0] === m.p[0] && r[1] === m.p[1]) return "exact";
+    if (sign(r[0], r[1]) === sign(m.p[0], m.p[1])) return "winner";
+    return "miss";
+  }
+
+  /* ------------------------------ Tracker --------------------------------- */
+  function tracker() {
+    var played = 0, winners = 0, exacts = 0;
+    MATCHES.forEach(function (m) {
+      if (isLive(m)) return;
+      var r = effResult(m);
+      if (!r) return;
+      played++;
+      var v = verdict(m);
+      if (v === "exact") { exacts++; winners++; }
+      else if (v === "winner") { winners++; }
+    });
+    var pct = played ? Math.round((winners / played) * 100) : 0;
+    return { played: played, winners: winners, exacts: exacts, pct: pct };
+  }
+
+  /* ----------------------------- Standings -------------------------------- */
+  // 3-1-0. Desempate: Pts -> DG -> GF -> orden oficial del grupo (estable).
+  function standings(group) {
+    var teams = (GROUPS[group] || []).map(function (t, i) {
+      return {
+        name: t[0], rank: t[1], order: i,
+        pj: 0, g: 0, e: 0, p: 0, gf: 0, gc: 0, pts: 0, dg: 0
+      };
+    });
+    var byName = {};
+    teams.forEach(function (t) { byName[t.name] = t; });
+
+    MATCHES.forEach(function (m) {
+      if (m.g !== group || isLive(m)) return;
+      var r = effResult(m);
+      if (!r) return;
+      var H = byName[m.h], A = byName[m.a];
+      if (!H || !A) return;
+      H.pj++; A.pj++;
+      H.gf += r[0]; H.gc += r[1];
+      A.gf += r[1]; A.gc += r[0];
+      if (r[0] > r[1]) { H.g++; A.p++; H.pts += 3; }
+      else if (r[0] < r[1]) { A.g++; H.p++; A.pts += 3; }
+      else { H.e++; A.e++; H.pts++; A.pts++; }
+    });
+    teams.forEach(function (t) { t.dg = t.gf - t.gc; });
+    teams.sort(function (a, b) {
+      return (b.pts - a.pts) || (b.dg - a.dg) || (b.gf - a.gf) || (a.order - b.order);
+    });
+    return teams;
+  }
+
+  /* ----------------------------- Formato ---------------------------------- */
+  var MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+  function fmtDate(iso) {
+    var p = String(iso).split("-"); // split manual: evita corrimientos por zona horaria
+    if (p.length !== 3) return iso;
+    var dia = parseInt(p[2], 10);
+    var mes = parseInt(p[1], 10) - 1;
+    return dia + " " + (MESES[mes] || "");
+  }
+  function scoreHTML(a, b, kind) {
+    return '<span class="score ' + kind + '">' +
+      esc(a) + '<span class="sep">:</span>' + esc(b) +
+      '</span>';
+  }
+  function chipHTML(v) {
+    switch (v) {
+      case "exact":  return '<span class="chip exact">🎯 Exacto</span>';
+      case "winner": return '<span class="chip winner">✅ Ganador</span>';
+      case "miss":   return '<span class="chip miss">❌ Fallado</span>';
+      case "live":   return '<span class="chip live"><span class="pulse"></span>En vivo</span>';
+      default:       return '<span class="chip pending">⏳ Pendiente</span>';
+    }
+  }
+  function ariaLabel(m) {
+    var v = verdict(m);
+    var vl = { exact: "pronóstico exacto", winner: "ganador acertado", miss: "fallado", live: "en vivo", pending: "pendiente" }[v];
+    var r = effResult(m);
+    var real = isLive(m) ? "en juego" : (r ? ("resultado " + r[0] + " a " + r[1]) : "sin resultado");
+    return "Grupo " + m.g + ", fecha " + m.f + ". " + m.h + " contra " + m.a +
+      ". Mi pronóstico " + m.p[0] + " a " + m.p[1] + ". " + real +
+      ". Veredicto: " + vl + ". Tocá para cargar o editar el resultado.";
+  }
+
+  /* ------------------------------ Tickets --------------------------------- */
+  function ticketHTML(m) {
+    var v = effResult(m);
+    var live = isLive(m);
+    var vd = verdict(m);
+
+    var realRead;
+    if (live)       realRead = '<span class="live-now">En vivo</span>';
+    else if (v)     realRead = scoreHTML(v[0], v[1], "ink");
+    else            realRead = '<span class="pend">⏳</span>';
+
+    var conf = (typeof m.c === "number") ? m.c : 0;
+    var pct = Math.max(0, Math.min(100, conf * 10));
+
+    return '' +
+      '<button type="button" class="ticket v-' + vd + '" data-id="' + esc(m.id) + '" ' +
+        'aria-label="' + esc(ariaLabel(m)) + '">' +
+        '<div class="t-meta">' +
+          '<div class="tags">' +
+            '<span class="tag grp">Grupo ' + esc(m.g) + '</span>' +
+            '<span class="tag">Fecha ' + esc(m.f) + '</span>' +
+            '<span class="tag">' + esc(fmtDate(m.d)) + '</span>' +
+          '</div>' +
+          chipHTML(vd) +
+        '</div>' +
+        '<div class="t-perf"></div>' +
+        '<div class="t-teams">' +
+          '<span class="team home">' + esc(m.h) + '</span>' +
+          '<span class="vs">vs</span>' +
+          '<span class="team away">' + esc(m.a) + '</span>' +
+        '</div>' +
+        '<div class="t-board">' +
+          '<div class="read">' +
+            '<span class="rk">Mi prode</span>' +
+            scoreHTML(m.p[0], m.p[1], "amber") +
+          '</div>' +
+          '<div class="bdiv"></div>' +
+          '<div class="read">' +
+            '<span class="rk">Real</span>' +
+            realRead +
+          '</div>' +
+        '</div>' +
+        '<div class="t-conf">' +
+          '<span class="cl">Conf</span>' +
+          '<span class="bar"><span class="fill" style="width:' + pct + '%"></span></span>' +
+          '<span class="cv">' + conf.toFixed(1) + '</span>' +
+        '</div>' +
+      '</button>';
+  }
+
+  /* --------------------------- Tabla (HTML) ------------------------------- */
+  function standingsHTML(group) {
+    var rows = standings(group).map(function (t, i) {
+      var cls = i < 2 ? "q" : (i === 2 ? "third" : "out");
+      var dg = (t.dg > 0 ? "+" : "") + t.dg;
+      var rec = t.pj + " PJ · " + t.g + "-" + t.e + "-" + t.p + " · " + t.gf + ":" + t.gc;
+      return '' +
+        '<div class="st-row ' + cls + '">' +
+          '<span class="st-pos">' + (i + 1) + '</span>' +
+          '<div class="st-team">' +
+            '<span class="st-name">' + esc(t.name) + '</span>' +
+            '<span class="st-rec">' + esc(rec) + '</span>' +
+          '</div>' +
+          '<span class="st-dg">' + dg + '</span>' +
+          '<span class="st-pts">' + t.pts + '</span>' +
+        '</div>';
+    }).join("");
+
+    return '' +
+      '<div class="standings">' +
+        '<div class="st-head">' +
+          '<span class="r">#</span>' +
+          '<span>Equipo · PJ · G-E-P · GF:GC</span>' +
+          '<span class="r">DG</span>' +
+          '<span class="r">Pts</span>' +
+        '</div>' +
+        rows +
+      '</div>';
+  }
+
+  /* ------------------------------ Render ---------------------------------- */
+  function byDateThenGroup(a, b) {
+    return a.d < b.d ? -1 : (a.d > b.d ? 1 : (a.g < b.g ? -1 : (a.g > b.g ? 1 : 0)));
+  }
+  function playedCount(list) {
+    var n = 0;
+    list.forEach(function (m) { if (!isLive(m) && effResult(m)) n++; });
+    return n;
+  }
+
+  function renderByFecha() {
+    var host = byId("contenido");
+    host.innerHTML = "";
+    [1, 2, 3].forEach(function (f) {
+      var list = MATCHES.filter(function (m) { return m.f === f; }).slice().sort(byDateThenGroup);
+      var sec = el("section");
+      sec.innerHTML =
+        '<div class="sec-h">' +
+          '<span class="tick"></span>' +
+          '<h2>Fecha ' + f + '</h2>' +
+          '<span class="sec-sub">' + playedCount(list) + " de " + list.length + ' jugados</span>' +
+        '</div>' +
+        '<div class="tickets">' + list.map(ticketHTML).join("") + '</div>';
+      host.appendChild(sec);
+    });
+  }
+
+  function renderByGroup() {
+    var host = byId("contenido");
+    host.innerHTML = "";
+    Object.keys(GROUPS).forEach(function (g) {
+      var list = MATCHES.filter(function (m) { return m.g === g; }).slice().sort(function (a, b) {
+        return (a.f - b.f) || byDateThenGroup(a, b);
+      });
+      var sec = el("section");
+      sec.innerHTML =
+        '<div class="sec-h">' +
+          '<span class="tick"></span>' +
+          '<h2>Grupo ' + g + '</h2>' +
+          '<span class="sec-sub">' + playedCount(list) + " de " + list.length + ' jugados</span>' +
+        '</div>' +
+        standingsHTML(g) +
+        '<div class="tickets">' + list.map(ticketHTML).join("") + '</div>';
+      host.appendChild(sec);
+    });
+  }
+
+  function updateTracker() {
+    var t = tracker();
+    var w = qs("#tk-win .v");   if (w) w.innerHTML = t.winners + "<small>/" + t.played + "</small>";
+    var x = qs("#tk-exact .v"); if (x) x.textContent = t.exacts;
+    var p = qs("#tk-pct .v");   if (p) p.innerHTML = t.pct + "<small>%</small>";
+  }
+
+  function render() {
+    var y = window.scrollY;
+    updateTracker();
+    if (view === "grupo") renderByGroup(); else renderByFecha();
+    window.scrollTo(0, y); // preservamos la posición de scroll al reconstruir
+  }
+
+  /* ------------------------------ Editor ---------------------------------- */
+  function openEditor(id) {
+    var m = MATCHES.find(function (x) { return x.id === id; });
+    if (!m) return;
+    editId = id;
+
+    byId("ed-title").textContent = m.h + " vs " + m.a;
+    byId("ed-sub").textContent = "Grupo " + m.g + " · Fecha " + m.f + " · " + fmtDate(m.d);
+    byId("ed-home-name").textContent = m.h;
+    byId("ed-away-name").textContent = m.a;
+    byId("ed-pred").innerHTML = "Tu pronóstico: <b>" + m.p[0] + ":" + m.p[1] + "</b>";
+
+    var r = effResult(m);
+    byId("ed-home").value = r ? r[0] : "";
+    byId("ed-away").value = r ? r[1] : "";
+    byId("ed-hint").textContent = "";
+
+    // Etiqueta y estado del botón de reset según el origen del dato.
+    var reset = byId("ed-reset");
+    if (hasUser(m)) {
+      reset.textContent = "Borrar mi carga";
+      reset.disabled = false;
+      reset.dataset.mode = "clear";
+    } else if (m.r != null) {
+      reset.textContent = "Restaurar dato del modelo";
+      reset.disabled = false;
+      reset.dataset.mode = "restore";
+    } else {
+      reset.textContent = "Sin dato cargado";
+      reset.disabled = true;
+      reset.dataset.mode = "none";
+    }
+
+    var dlg = byId("editor");
+    if (typeof dlg.showModal === "function") dlg.showModal();
+    else dlg.setAttribute("open", "");
+    setTimeout(function () { byId("ed-home").focus(); byId("ed-home").select(); }, 30);
+  }
+  function closeEditor() {
+    var dlg = byId("editor");
+    if (typeof dlg.close === "function") dlg.close();
+    else dlg.removeAttribute("open");
+    editId = null;
+  }
+
+  function readScore() {
+    var hs = byId("ed-home").value.trim();
+    var as = byId("ed-away").value.trim();
+    if (hs === "" || as === "") return null;
+    if (!/^\d{1,2}$/.test(hs) || !/^\d{1,2}$/.test(as)) return null;
+    var h = parseInt(hs, 10), a = parseInt(as, 10);
+    if (h < 0 || a < 0 || h > 99 || a > 99) return null;
+    return [h, a];
+  }
+
+  function onEditorSubmit(e) {
+    e.preventDefault(); // controlamos nosotros el cierre para poder validar
+    if (!editId) return;
+    var sc = readScore();
+    if (!sc) {
+      byId("ed-hint").textContent = "Ingresá dos números válidos (0 o más) para guardar.";
+      return;
+    }
+    results[editId] = sc;
+    saveResults();
+    closeEditor();
+    render();
+    toast("Resultado guardado");
+  }
+
+  function onEditorReset() {
+    if (!editId) return;
+    var mode = byId("ed-reset").dataset.mode;
+    if (mode === "clear") {
+      delete results[editId];
+      saveResults();
+      closeEditor();
+      render();
+      toast("Volvé al dato base del partido");
+    } else if (mode === "restore") {
+      var m = MATCHES.find(function (x) { return x.id === editId; });
+      if (m && m.r) {
+        byId("ed-home").value = m.r[0];
+        byId("ed-away").value = m.r[1];
+        byId("ed-hint").textContent = "";
+      }
+    }
+  }
+
+  function resetAll() {
+    var ok = window.confirm("¿Borrar todos los resultados que cargaste y volver a los datos del modelo?");
+    if (!ok) return;
+    results = {};
+    saveResults();
+    render();
+    toast("Todo reiniciado");
+  }
+
+  /* ------------------------------ Toast ----------------------------------- */
+  var toastTimer = null;
+  function toast(msg) {
+    var t = byId("toast");
+    if (!t) return;
+    t.textContent = msg;
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { t.classList.remove("show"); }, 2200);
+  }
+
+  /* --------------------- Sync opcional: TheSportsDB ----------------------- */
+  // Beta y defensivo: solo rellena partidos PENDIENTES (nunca pisa semillas ni
+  // cargas del usuario), con timeout, y cae en silencio si algo falla.
+  var NAME_ALIASES = {
+    "mexico": "México", "south korea": "Corea del Sur", "korea republic": "Corea del Sur",
+    "south africa": "Sudáfrica", "czechia": "Chequia", "czech republic": "Chequia",
+    "switzerland": "Suiza", "canada": "Canadá", "qatar": "Qatar",
+    "bosnia and herzegovina": "Bosnia", "bosnia herzegovina": "Bosnia", "bosnia": "Bosnia",
+    "brazil": "Brasil", "morocco": "Marruecos", "scotland": "Escocia", "haiti": "Haití",
+    "united states": "EE.UU.", "usa": "EE.UU.", "united states of america": "EE.UU.",
+    "turkey": "Turquía", "turkiye": "Turquía", "australia": "Australia", "paraguay": "Paraguay",
+    "germany": "Alemania", "ecuador": "Ecuador",
+    "ivory coast": "Costa de Marfil", "cote divoire": "Costa de Marfil", "cote d ivoire": "Costa de Marfil",
+    "curacao": "Curazao", "netherlands": "Países Bajos", "holland": "Países Bajos",
+    "japan": "Japón", "sweden": "Suecia", "tunisia": "Túnez", "belgium": "Bélgica",
+    "iran": "Irán", "ir iran": "Irán", "egypt": "Egipto", "new zealand": "Nueva Zelanda",
+    "spain": "España", "uruguay": "Uruguay", "saudi arabia": "Arabia Saudita",
+    "cape verde": "Cabo Verde", "cabo verde": "Cabo Verde", "france": "Francia",
+    "senegal": "Senegal", "norway": "Noruega", "iraq": "Irak", "argentina": "Argentina",
+    "austria": "Austria", "algeria": "Argelia", "jordan": "Jordania", "portugal": "Portugal",
+    "colombia": "Colombia", "dr congo": "RD Congo", "congo dr": "RD Congo",
+    "democratic republic of the congo": "RD Congo", "uzbekistan": "Uzbekistán",
+    "england": "Inglaterra", "croatia": "Croacia", "panama": "Panamá", "ghana": "Ghana"
+  };
+  function norm(s) {
+    return String(s).toLowerCase()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // saca diacríticos
+      .replace(/[^a-z0-9]/g, "");                       // saca todo lo no alfanumérico
+  }
+  // Mapa normalizado -> nombre canónico (incluye los propios nombres en español).
+  var ALIAS = {};
+  (function () {
+    Object.keys(NAME_ALIASES).forEach(function (k) { ALIAS[norm(k)] = NAME_ALIASES[k]; });
+    Object.keys(GROUPS).forEach(function (g) {
+      GROUPS[g].forEach(function (t) { ALIAS[norm(t[0])] = t[0]; });
+    });
+  })();
+  function mapName(s) { return ALIAS[norm(s)] || null; }
+
+  function trySync(btn) {
+    var label = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = "Buscando…";
+
+    var done = function (msg) {
+      btn.disabled = false;
+      btn.textContent = label;
+      render();
+      if (msg) toast(msg);
+    };
+
+    var ctrl = (typeof AbortController !== "undefined") ? new AbortController() : null;
+    var timer = setTimeout(function () { if (ctrl) ctrl.abort(); }, 6000);
+    var url = "https://www.thesportsdb.com/api/v1/json/123/eventsseason.php?id=4429&s=2026";
+
+    fetch(url, ctrl ? { signal: ctrl.signal } : undefined)
+      .then(function (res) { return res.ok ? res.json() : Promise.reject(new Error("HTTP " + res.status)); })
+      .then(function (data) {
+        clearTimeout(timer);
+        var events = (data && data.events) || [];
+        var filled = 0;
+
+        // Solo partidos rellenables: sin semilla y sin carga del usuario.
+        var pending = MATCHES.filter(function (m) { return effResult(m) == null; });
+
+        events.forEach(function (ev) {
+          var hs = ev.intHomeScore, as = ev.intAwayScore;
+          if (hs == null || as == null || hs === "" || as === "") return;
+          var h = mapName(ev.strHomeTeam), a = mapName(ev.strAwayTeam);
+          if (!h || !a) return;
+          var match = pending.find(function (m) { return m.h === h && m.a === a; });
+          if (!match) return;
+          results[match.id] = [parseInt(hs, 10), parseInt(as, 10)];
+          filled++;
+        });
+
+        if (filled > 0) saveResults();
+        done(filled > 0
+          ? ("Se completaron " + filled + (filled === 1 ? " partido" : " partidos"))
+          : "No encontré resultados nuevos");
+      })
+      .catch(function () {
+        clearTimeout(timer);
+        done("No pude conectarme a la API; segui con la carga manual");
+      });
+  }
+
+  /* ------------------------------- Init ----------------------------------- */
+  function setView(next) {
+    if (next === view) return;
+    view = next;
+    qs('.seg button[data-view="fecha"]').setAttribute("aria-pressed", String(view === "fecha"));
+    qs('.seg button[data-view="grupo"]').setAttribute("aria-pressed", String(view === "grupo"));
+    render();
+  }
+
+  function init() {
+    // Toggle de vista
+    qsa('.seg button[data-view]').forEach(function (b) {
+      b.addEventListener("click", function () { setView(b.dataset.view); });
+    });
+
+    // Delegación: tap en cualquier ticket abre el editor
+    byId("contenido").addEventListener("click", function (e) {
+      var t = e.target.closest(".ticket");
+      if (t && t.dataset.id) openEditor(t.dataset.id);
+    });
+
+    // Editor
+    byId("ed-form").addEventListener("submit", onEditorSubmit);
+    byId("ed-reset").addEventListener("click", onEditorReset);
+    byId("ed-cancel").addEventListener("click", closeEditor);
+    var dlg = byId("editor");
+    dlg.addEventListener("cancel", function (e) { e.preventDefault(); closeEditor(); }); // tecla Esc
+    byId("ed-home").addEventListener("input", function () { byId("ed-hint").textContent = ""; });
+    byId("ed-away").addEventListener("input", function () { byId("ed-hint").textContent = ""; });
+
+    // Acciones del pie
+    byId("btn-sync").addEventListener("click", function () { trySync(this); });
+    byId("btn-reset").addEventListener("click", resetAll);
+
+    render();
+  }
+  function qsa(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+})();
+
+</script>
+</body>
+</html>
