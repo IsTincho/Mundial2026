@@ -29,6 +29,25 @@ export const GROUPS: Record<string, Team[]> = {
   L: [["Inglaterra", 4], ["Croacia", 11], ["Panamá", 33], ["Ghana", 72]],
 };
 
+// Confederación por equipo (para filtro por zona). Informativo.
+export const CONFED: Record<string, string> = {
+  "México": "CONCACAF", "Corea del Sur": "AFC", "Sudáfrica": "CAF", "Chequia": "UEFA",
+  "Suiza": "UEFA", "Canadá": "CONCACAF", "Qatar": "AFC", "Bosnia": "UEFA",
+  "Brasil": "CONMEBOL", "Marruecos": "CAF", "Escocia": "UEFA", "Haití": "CONCACAF",
+  "EE.UU.": "CONCACAF", "Turquía": "UEFA", "Australia": "AFC", "Paraguay": "CONMEBOL",
+  "Alemania": "UEFA", "Ecuador": "CONMEBOL", "Costa de Marfil": "CAF", "Curazao": "CONCACAF",
+  "Países Bajos": "UEFA", "Japón": "AFC", "Suecia": "UEFA", "Túnez": "CAF",
+  "Bélgica": "UEFA", "Irán": "AFC", "Egipto": "CAF", "Nueva Zelanda": "OFC",
+  "España": "UEFA", "Uruguay": "CONMEBOL", "Arabia Saudita": "AFC", "Cabo Verde": "CAF",
+  "Francia": "UEFA", "Senegal": "CAF", "Noruega": "UEFA", "Irak": "AFC",
+  "Argentina": "CONMEBOL", "Austria": "UEFA", "Argelia": "CAF", "Jordania": "AFC",
+  "Portugal": "UEFA", "Colombia": "CONMEBOL", "RD Congo": "CAF", "Uzbekistán": "AFC",
+  "Inglaterra": "UEFA", "Croacia": "UEFA", "Panamá": "CONCACAF", "Ghana": "CAF",
+};
+
+// Confederaciones presentes, en orden de cantidad de equipos.
+export const CONFEDS = ["UEFA", "CAF", "AFC", "CONMEBOL", "CONCACAF", "OFC"] as const;
+
 type RawMatch = Omit<Match, "id">;
 
 const RAW: RawMatch[] = [
@@ -134,3 +153,16 @@ export const MATCHES: Match[] = RAW.map((m) => ({
   ...m,
   id: `${m.g}-${m.f}-${m.h}-${m.a}`,
 }));
+
+// Ranking mundial por equipo (de GROUPS), para mostrarlo en las tarjetas.
+export const RANK: Record<string, number> = {};
+for (const g of Object.keys(GROUPS)) {
+  for (const [name, rank] of GROUPS[g]) RANK[name] = rank;
+}
+
+// Metadata corta de un equipo: confederación + ranking, ej "UEFA · #2".
+export function teamMeta(name: string): string {
+  const c = CONFED[name];
+  const r = RANK[name];
+  return [c, r ? "#" + r : ""].filter(Boolean).join(" · ");
+}

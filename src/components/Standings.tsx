@@ -14,26 +14,31 @@ export function Standings({
 }) {
   const rows = standings(group, groups, matches, results);
   return (
-    <div className="standings">
-      <div className="st-head">
+    <div className="table">
+      <div className="th">
         <span className="r">#</span>
-        <span>Equipo · PJ · G-E-P · GF:GC</span>
+        <span>Equipo · PJ · G-E-P</span>
+        <span className="r">GF:GC</span>
         <span className="r">DG</span>
         <span className="r">Pts</span>
       </div>
       {rows.map((t, i) => {
         const cls = i < 2 ? "q" : i === 2 ? "third" : "out";
-        const dg = (t.dg > 0 ? "+" : "") + t.dg;
-        const rec = `${t.pj} PJ · ${t.g}-${t.e}-${t.p} · ${t.gf}:${t.gc}`;
+        const dg = (t.dg > 0 ? "+" : t.dg < 0 ? "−" : "") + Math.abs(t.dg);
         return (
-          <div className={"st-row " + cls} key={t.name}>
-            <span className="st-pos">{i + 1}</span>
-            <div className="st-team">
-              <span className="st-name">{t.name}</span>
-              <span className="st-rec">{rec}</span>
+          <div className={"tr " + cls} key={t.name}>
+            <span className="pos">{i + 1}</span>
+            <div className="tm">
+              <span className="nm">{t.name}</span>
+              <span className="rec">
+                {t.pj} PJ · {t.g}-{t.e}-{t.p}
+              </span>
             </div>
-            <span className="st-dg">{dg}</span>
-            <span className="st-pts">{t.pts}</span>
+            <span className="num">
+              {t.gf}:{t.gc}
+            </span>
+            <span className="num">{dg}</span>
+            <span className="pts">{t.pts}</span>
           </div>
         );
       })}

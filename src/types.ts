@@ -25,7 +25,23 @@ export interface ProdeData {
 }
 
 export type Verdict = "exact" | "winner" | "miss" | "live" | "pending";
-export type View = "fecha" | "grupo";
+
+// Vista principal del fixture.
+export type View = "fecha" | "grupo" | "bracket";
+// Densidad de la lista de partidos.
+export type ViewMode = "cards" | "dense";
+
+// Filtro por estado (categoría). "all" = sin filtro.
+export type StatusFilter = "all" | "live" | "pending" | "exact" | "winner" | "miss";
+// Filtro por confianza del modelo.
+export type ConfFilter = "all" | "low" | "high";
+
+export interface Filters {
+  status: StatusFilter;
+  conf: ConfFilter;
+  confed: string | null; // confederación o null
+  query: string;         // búsqueda por equipo/grupo
+}
 
 // Cargas manuales del usuario: { matchId: [local, visita] }.
 export type Results = Record<string, Score>;
@@ -49,4 +65,22 @@ export interface TrackerStats {
   winners: number;
   exacts: number;
   pct: number;
+}
+
+// Clasificado proyectado para el bracket.
+export interface Qualifier {
+  name: string;
+  group: string;
+  pos: 1 | 2 | 3;      // 1º, 2º o mejor tercero
+  pts: number;
+  dg: number;
+  gf: number;
+  seed: number;        // siembra global 1..32
+}
+
+// Llave del bracket (un cruce).
+export interface BracketTie {
+  round: string;       // "32avos" | "Octavos" | ...
+  a: Qualifier | null;
+  b: Qualifier | null;
 }

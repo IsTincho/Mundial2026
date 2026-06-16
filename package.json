@@ -11,6 +11,9 @@
     "deploy": "npm run build && wrangler pages deploy dist --project-name=mundial2026"
   },
   "dependencies": {
+    "@fontsource/anton": "^5.2.7",
+    "@fontsource/hanken-grotesk": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

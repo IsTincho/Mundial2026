@@ -6,7 +6,10 @@ Construida con **React + Vite + TypeScript**. Funciona **100% del lado del clien
 
 ## Qué hace
 
-- **Fixture completo**: 72 partidos, 12 grupos (A–L), 3 fechas. Toggle entre vista **por fecha** y **por grupo**.
+- **Fixture completo**: 72 partidos, 12 grupos (A–L), 3 fechas. Tres vistas: **por fecha**, **por grupo** y **fase final** (bracket).
+- **Paginación**: navegás fecha por fecha (o grupo por grupo) con un pager, en vez de un scroll infinito.
+- **Dos densidades**: vista de **tarjetas** (broadcast, con confianza y veredicto) o **lista densa** para escanear rápido.
+- **Filtros y categorías**: chips por **estado** (en vivo / pendientes / exactos / ganados / fallados, con contador), por **confianza** (candidatos a empate, conf < 6), por **confederación** (UEFA, CONMEBOL, …) y **búsqueda** por equipo o grupo.
 - **Prode con veredicto** por partido:
   - 🎯 **Exacto**: el marcador pronosticado es idéntico al real.
   - ✅ **Ganador**: acerté el resultado (gana local / empate / gana visita) aunque no el marcador.
@@ -15,7 +18,12 @@ Construida con **React + Vite + TypeScript**. Funciona **100% del lado del clien
   - 🔴 **En vivo**: partido en juego.
 - **Tracker de aciertos** en el header: ganadores acertados, marcadores exactos y % corriente, calculado **solo sobre los partidos con resultado**.
 - **Tabla por grupo** autocalculada (3 puntos por ganar, 1 por empatar). Desempate por **diferencia de gol → goles a favor → orden oficial del grupo**. Resalta los **dos primeros** (clasifican, en verde) y marca el **tercero** (candidato a mejor tercero, en ámbar punteado).
-- **Carga manual de resultados**: tocás un partido, cargás el marcador real y se guarda en tu navegador. La tabla y los aciertos se recalculan **al instante**.
+- **Fase final proyectada**: bracket de 32 que se arma **desde la tabla en vivo** (1º y 2º de cada grupo + los 8 mejores terceros, sembrados por campaña). En cada cruce avanza el de mejor siembra. Es una **proyección** que se recalcula al cargar resultados — no son predicciones de marcador del knockout.
+- **Carga manual de resultados**: tocás un partido, cargás el marcador real y se guarda en tu navegador. Tabla, bracket y aciertos se recalculan **al instante**.
+
+## Diseño
+
+Dirección **broadcast editorial**: fondo *ink black*, acento **cian eléctrico**, tipografía display condensada (**Anton**) + grotesk (**Hanken Grotesk**) + mono tabular (**JetBrains Mono**) para los números. Fuentes self-hosted vía `@fontsource` (sin CDN, funciona offline). Mobile-first, foco visible, respeta `prefers-reduced-motion`.
 
 ## Cómo cargar y actualizar resultados
 
@@ -68,20 +76,23 @@ prode-mundial-2026/
 ├── public/
 │   └── vista-previa.html   # versión vanilla de un solo archivo (legacy, autocontenida)
 └── src/
-    ├── main.tsx            # bootstrap de React
-    ├── App.tsx             # composición: estado de vista, editor, sync, secciones
-    ├── data.ts             # datos semilla (72 partidos, grupos, pronósticos)
+    ├── main.tsx            # bootstrap de React + carga de fuentes
+    ├── App.tsx             # composición: vistas, filtros, paginación, sync
+    ├── data.ts             # datos semilla: 72 partidos, grupos, confederaciones, ranking
     ├── types.ts            # tipos compartidos
-    ├── styles.css          # estilos (scoreboard de noche)
+    ├── styles.css          # estilos (broadcast editorial)
     ├── hooks/
     │   └── useResults.ts   # estado de cargas + persistencia en localStorage
     ├── lib/
     │   ├── logic.ts        # lógica pura: veredicto, tabla, tracker, formato
+    │   ├── filters.ts      # filtros y categorías (estado, confianza, zona, búsqueda)
+    │   ├── bracket.ts      # clasificados + bracket proyectado desde la tabla
     │   └── sync.ts         # sync beta con TheSportsDB
     └── components/
-        ├── Header.tsx · ViewToggle.tsx · Ticket.tsx · Standings.tsx
+        ├── Header.tsx · TopBar.tsx · FilterBar.tsx · Pager.tsx
+        ├── MatchCard.tsx · MatchRow.tsx · Standings.tsx · Bracket.tsx
         ├── Editor.tsx      # carga manual con <dialog> nativo
-        ├── Score.tsx       # marcador + chip de veredicto
+        ├── Score.tsx       # chip de veredicto
         └── Toast.tsx
 ```
 

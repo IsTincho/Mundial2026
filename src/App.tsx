@@ -1,126 +1,217 @@
 import { useMemo, useState } from "react";
-import type { Match, View } from "./types";
-import { GROUPS, MATCHES, UPDATED } from "./data";
-import { byDateThenGroup, fmtDate, playedCount, tracker } from "./lib/logic";
+import type {
+  ConfFilter,
+  Filters,
+  Match,
+  StatusFilter,
+  View,
+  ViewMode,
+} from "./types";
+import { CONFEDS, GROUPS, MATCHES, UPDATED } from "./data";
+import {
+  byDateThenGroup,
+  fmtDate,
+  isLive,
+  playedCount,
+  tracker,
+} from "./lib/logic";
+import {
+  EMPTY_FILTERS,
+  filterMatches,
+  filtersActive,
+  statusCounts,
+} from "./lib/filters";
 import { syncResults } from "./lib/sync";
 import { useResults } from "./hooks/useResults";
 import { Header } from "./components/Header";
-import { ViewToggle } from "./components/ViewToggle";
-import { Ticket } from "./components/Ticket";
+import { TopBar } from "./components/TopBar";
+import { FilterBar } from "./components/FilterBar";
+import { Pager } from "./components/Pager";
+import type { PageInfo } from "./components/Pager";
+import { MatchCard } from "./components/MatchCard";
+import { MatchRow } from "./components/MatchRow";
 import { Standings } from "./components/Standings";
+import { Bracket } from "./components/Bracket";
 import { Editor } from "./components/Editor";
 import { useToast } from "./components/Toast";
+
+const FECHAS = [1, 2, 3] as const;
+const GRUPOS = Object.keys(GROUPS);
 
 export default function App() {
   const { results, setScore, clearScore, applyPatch, resetAll } = useResults();
   const [view, setView] = useState<View>("fecha");
+  const [mode, setMode] = useState<ViewMode>("cards");
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
+  const [page, setPage] = useState<{ fecha: number; grupo: number }>({ fecha: 0, grupo: 0 });
   const [editId, setEditId] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const { toast, node: toastNode } = useToast();
 
   const stats = useMemo(() => tracker(MATCHES, results), [results]);
+  const liveCount = useMemo(
+    () => MATCHES.filter((m) => isLive(m, results)).length,
+    [results],
+  );
+  const counts = useMemo(() => statusCounts(MATCHES, results), [results]);
+  const active = filtersActive(filters);
   const editMatch = useMemo(
     () => MATCHES.find((m) => m.id === editId) ?? null,
     [editId],
   );
 
-  const sections = useMemo(() => {
-    if (view === "grupo") {
-      return Object.keys(GROUPS).map((g) => ({
-        key: g,
-        title: "Grupo " + g,
-        group: g,
-        list: MATCHES.filter((m) => m.g === g)
-          .slice()
-          .sort((a, b) => a.f - b.f || byDateThenGroup(a, b)),
-      }));
-    }
-    return ([1, 2, 3] as const).map((f) => ({
-      key: "f" + f,
-      title: "Fecha " + f,
-      group: null as string | null,
-      list: MATCHES.filter((m) => m.f === f).slice().sort(byDateThenGroup),
-    }));
-  }, [view]);
+  // --- helpers de filtros ---
+  const patch = (p: Partial<Filters>) => setFilters((f) => ({ ...f, ...p }));
+  const onStatus = (s: StatusFilter) => patch({ status: filters.status === s ? "all" : s });
+  const onConf = () => patch({ conf: (filters.conf === "low" ? "all" : "low") as ConfFilter });
+  const onConfed = (c: string) => patch({ confed: filters.confed === c ? null : c });
+  const onQuery = (q: string) => patch({ query: q });
+  const onClear = () => setFilters(EMPTY_FILTERS);
+
+  // --- resultados de filtro (modo plano, sin paginación) ---
+  const filtered = useMemo(
+    () => filterMatches(MATCHES, results, filters).slice().sort(byDateThenGroup),
+    [results, filters],
+  );
+
+  // --- páginas (sin filtros activos) ---
+  const fechaList = (f: number) =>
+    MATCHES.filter((m) => m.f === f).slice().sort(byDateThenGroup);
+  const grupoList = (g: string) =>
+    MATCHES.filter((m) => m.g === g).slice().sort((a, b) => a.f - b.f || byDateThenGroup(a, b));
+
+  const dateRange = (list: Match[]): string => {
+    if (!list.length) return "";
+    const ds = list.map((m) => m.d).sort();
+    const a = fmtDate(ds[0]);
+    const b = fmtDate(ds[ds.length - 1]);
+    return a === b ? a : `${a}–${b}`;
+  };
 
   const onSave = (id: string, score: [number, number]) => {
     setScore(id, score);
     setEditId(null);
     toast("Resultado guardado");
   };
-  const onClear = (id: string) => {
+  const onClearScore = (id: string) => {
     clearScore(id);
     setEditId(null);
-    toast("Volvé al dato base del partido");
+    toast("Volvé al dato base");
   };
 
   const onSync = async () => {
     setSyncing(true);
     const out = await syncResults(MATCHES, results, GROUPS);
     setSyncing(false);
-    if (!out.ok) {
-      toast("No pude conectarme a la API; segui con la carga manual");
-      return;
-    }
+    if (!out.ok) return toast("No pude conectarme; segui con carga manual");
     if (out.filled > 0) {
       applyPatch(out.patch);
-      toast(
-        "Se completaron " +
-          out.filled +
-          (out.filled === 1 ? " partido" : " partidos"),
-      );
-    } else {
-      toast("No encontré resultados nuevos");
-    }
+      toast(`Se completaron ${out.filled} partido${out.filled === 1 ? "" : "s"}`);
+    } else toast("No encontré resultados nuevos");
   };
 
   const onResetAll = () => {
-    const ok = window.confirm(
-      "¿Borrar todos los resultados que cargaste y volver a los datos del modelo?",
-    );
-    if (!ok) return;
+    if (!window.confirm("¿Borrar todos los resultados que cargaste y volver a los datos del modelo?")) return;
     resetAll();
     toast("Todo reiniciado");
   };
 
+  const renderList = (list: Match[]) =>
+    mode === "dense" ? (
+      <div className="mrows">
+        {list.map((m) => (
+          <MatchRow key={m.id} m={m} results={results} onOpen={setEditId} />
+        ))}
+      </div>
+    ) : (
+      <div className="tickets">
+        {list.map((m) => (
+          <MatchCard key={m.id} m={m} results={results} onOpen={setEditId} />
+        ))}
+      </div>
+    );
+
+  // --- contenido principal ---
+  let content;
+  if (view === "bracket") {
+    content = <Bracket groups={GROUPS} matches={MATCHES} results={results} />;
+  } else if (active) {
+    content = (
+      <section>
+        <div className="sectionhead">
+          <span className="bar3" />
+          <h2>Resultados</h2>
+          <span className="ss">{filtered.length} partidos</span>
+        </div>
+        {filtered.length ? (
+          renderList(filtered)
+        ) : (
+          <div className="empty">
+            <div className="big">Sin partidos</div>
+            <p>Ningún partido coincide con los filtros.</p>
+            <button type="button" className="btn primary" onClick={onClear}>
+              Limpiar filtros
+            </button>
+          </div>
+        )}
+      </section>
+    );
+  } else if (view === "fecha") {
+    const idx = page.fecha;
+    const f = FECHAS[idx];
+    const list = fechaList(f);
+    const info: PageInfo = {
+      label: "Jornada",
+      big: "Fecha",
+      em: String(f).padStart(2, "0"),
+      meta: `${playedCount(list, results)} de ${list.length} jugados · ${dateRange(list)}`,
+    };
+    content = (
+      <>
+        <Pager pages={FECHAS.length} index={idx} onIndex={(i) => setPage((p) => ({ ...p, fecha: i }))} info={info} />
+        {renderList(list)}
+      </>
+    );
+  } else {
+    const idx = page.grupo;
+    const g = GRUPOS[idx];
+    const list = grupoList(g);
+    const info: PageInfo = {
+      label: "Zona",
+      big: "Grupo",
+      em: g,
+      meta: `${playedCount(list, results)} de ${list.length} jugados · ${dateRange(list)}`,
+    };
+    content = (
+      <>
+        <Pager pages={GRUPOS.length} index={idx} onIndex={(i) => setPage((p) => ({ ...p, grupo: i }))} info={info} />
+        <Standings group={g} groups={GROUPS} matches={MATCHES} results={results} />
+        {renderList(list)}
+      </>
+    );
+  }
+
   return (
     <>
-      <Header stats={stats} />
-      <ViewToggle view={view} onChange={setView} />
+      <Header stats={stats} liveCount={liveCount} />
+      <TopBar view={view} onView={setView} mode={mode} onMode={setMode} />
 
       <main>
         <div className="wrap">
-          <div id="contenido">
-            {sections.map((sec) => (
-              <section key={sec.key}>
-                <div className="sec-h">
-                  <span className="tick" />
-                  <h2>{sec.title}</h2>
-                  <span className="sec-sub">
-                    {playedCount(sec.list, results)} de {sec.list.length} jugados
-                  </span>
-                </div>
-                {sec.group && (
-                  <Standings
-                    group={sec.group}
-                    groups={GROUPS}
-                    matches={MATCHES}
-                    results={results}
-                  />
-                )}
-                <div className="tickets">
-                  {sec.list.map((m: Match) => (
-                    <Ticket
-                      key={m.id}
-                      m={m}
-                      results={results}
-                      onOpen={setEditId}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
+          {view !== "bracket" && (
+            <FilterBar
+              filters={filters}
+              counts={counts}
+              confeds={CONFEDS}
+              active={active}
+              onStatus={onStatus}
+              onConf={onConf}
+              onConfed={onConfed}
+              onQuery={onQuery}
+              onClear={onClear}
+            />
+          )}
+          <div id="contenido">{content}</div>
         </div>
       </main>
 
@@ -128,38 +219,26 @@ export default function App() {
         <div className="wrap">
           <div className="legend">
             <span>🎯 <b>Exacto</b>: marcador clavado</span>
-            <span>✅ <b>Ganador</b>: acerté G/E/P</span>
+            <span>✅ <b>Ganador</b>: G/E/P</span>
             <span>❌ <b>Fallado</b></span>
             <span>⏳ <b>Pendiente</b></span>
-            <span>🔴 <b>En vivo</b></span>
-            <span>
-              Tabla: <b>verde</b> clasifican (1º–2º) · <b>ámbar</b> mejor tercero (3º)
-            </span>
+            <span><b>verde</b> clasifican · <b>ámbar</b> mejor 3º</span>
           </div>
-
           <div className="foot-actions">
-            <button
-              type="button"
-              className="btn"
-              disabled={syncing}
-              onClick={onSync}
-            >
+            <button type="button" className="btn" disabled={syncing} onClick={onSync}>
               {syncing ? "Buscando…" : "Buscar resultados (beta)"}
             </button>
             <button type="button" className="btn ghost" onClick={onResetAll}>
               Reiniciar todo
             </button>
           </div>
-
           <p className="meta">
-            Datos al {fmtDate(UPDATED)} · Predicciones: modelo Montecarlo.
-            <br />
-            Tocá un partido para cargar o editar su resultado real. Resultados en
-            vivo (beta) vía{" "}
+            Datos al {fmtDate(UPDATED)} · predicciones modelo Montecarlo · resultados
+            en vivo (beta) vía{" "}
             <a href="https://www.thesportsdb.com" target="_blank" rel="noopener">
               TheSportsDB
             </a>
-            .
+            . Tocá un partido para cargar o editar su resultado.
           </p>
         </div>
       </footer>
@@ -168,7 +247,7 @@ export default function App() {
         match={editMatch}
         results={results}
         onSave={onSave}
-        onClear={onClear}
+        onClear={onClearScore}
         onClose={() => setEditId(null)}
       />
 
