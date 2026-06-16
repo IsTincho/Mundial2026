@@ -5,7 +5,7 @@ import type { Match, Team } from "../types";
 import { fetchLive, type LiveFeed } from "../lib/live";
 
 const POLL_MS = 45_000;
-const EMPTY: LiveFeed = { live: {}, finals: {} };
+const EMPTY: LiveFeed = { live: {}, finals: {}, eventIds: {} };
 
 export function useLive(matches: Match[], groups: Record<string, Team[]>): LiveFeed {
   const [feed, setFeed] = useState<LiveFeed>(EMPTY);

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Match, Results, Score } from "../types";
 import { effResult, localDateTime } from "../lib/logic";
+import { MatchDetailPanel } from "./MatchDetailPanel";
 
 function parseScore(hs: string, as: string): Score | null {
   const h = hs.trim();
@@ -17,6 +18,8 @@ export function Editor({
   match,
   results,
   userLoaded,
+  eventId,
+  live,
   onSave,
   onClear,
   onClose,
@@ -24,6 +27,8 @@ export function Editor({
   match: Match | null;
   results: Results;
   userLoaded: boolean;
+  eventId: string | null;
+  live: boolean;
   onSave: (id: string, score: Score) => void;
   onClear: (id: string) => void;
   onClose: () => void;
@@ -180,6 +185,8 @@ export function Editor({
           </div>
         </div>
       </form>
+
+      {eventId && <MatchDetailPanel eventId={eventId} live={live} />}
     </dialog>
   );
 }

@@ -6,6 +6,7 @@ import type { LiveMap, Match, Results, Score, Team } from "../types";
 import { makeNameMapper } from "./names";
 
 interface DayEvent {
+  idEvent?: string;
   strHomeTeam?: string;
   strAwayTeam?: string;
   intHomeScore?: string | null;
@@ -29,6 +30,7 @@ const FINISHED = new Set([
 export interface LiveFeed {
   live: LiveMap;     // partidos en juego ahora (con marcador en curso)
   finals: Results;   // partidos terminados (para rellenar pendientes)
+  eventIds: Record<string, string>; // matchId → idEvent (para el detalle)
 }
 
 const API = "https://www.thesportsdb.com/api/v1/json/123/eventsday.php";
@@ -60,6 +62,7 @@ export async function fetchLive(
   const mapName = makeNameMapper(groups);
   const live: LiveMap = {};
   const finals: Results = {};
+  const eventIds: Record<string, string> = {};
 
   const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
   const timer = setTimeout(() => ctrl?.abort(), 6000);
@@ -81,23 +84,23 @@ export async function fetchLive(
     }
 
     for (const ev of events) {
-      const status = (ev.strStatus || "").trim().toLowerCase();
-      const inPlay = IN_PLAY.has(status);
-      const done = FINISHED.has(status);
-      if (!inPlay && !done) continue;
       const h = mapName(ev.strHomeTeam ?? undefined);
       const a = mapName(ev.strAwayTeam ?? undefined);
       if (!h || !a) continue;
       const m = matches.find((x) => x.h === h && x.a === a);
       if (!m) continue;
+      if (ev.idEvent) eventIds[m.id] = ev.idEvent; // detalle disponible para cualquier estado
+      const status = (ev.strStatus || "").trim().toLowerCase();
+      const inPlay = IN_PLAY.has(status);
+      const done = FINISHED.has(status);
       const score = parseScore(ev.intHomeScore, ev.intAwayScore);
       if (inPlay) live[m.id] = score;
-      else if (score) finals[m.id] = score;
+      else if (done && score) finals[m.id] = score;
     }
 
-    return { live, finals };
+    return { live, finals, eventIds };
   } catch {
     clearTimeout(timer);
-    return { live: {}, finals: {} };
+    return { live: {}, finals: {}, eventIds: {} };
   }
 }

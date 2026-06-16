@@ -320,7 +320,9 @@ section { margin-bottom: 26px; }
 .foot .credit a:hover { text-decoration: underline; }
 
 /* ============================ DIALOG ============================ */
-dialog#editor { border: 1px solid var(--line-2); border-radius: 18px; padding: 0; background: var(--surface); color: var(--text); width: min(430px, 93vw); box-shadow: 0 30px 80px rgba(0, 0, 0, .6); }
+dialog#editor { border: 1px solid var(--line-2); border-radius: var(--r-lg); padding: 0; background: var(--surface); color: var(--text); width: min(440px, 93vw); max-height: 90vh; overflow-y: auto; box-shadow: var(--hi), 0 30px 80px rgba(0, 0, 0, .6); }
+dialog#editor::-webkit-scrollbar { width: 8px; }
+dialog#editor::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
 dialog#editor::backdrop { background: rgba(5, 6, 8, .74); backdrop-filter: blur(3px); }
 #ed-form { padding: 20px; }
 #ed-title { font-family: var(--display); margin: 0 0 3px; font-size: 22px; text-transform: uppercase; letter-spacing: .01em; line-height: 1; }
@@ -337,6 +339,35 @@ dialog#editor::backdrop { background: rgba(5, 6, 8, .74); backdrop-filter: blur(
 .ed-hint { margin: 9px 0 0; color: var(--miss); font-size: 12px; min-height: 1.1em; }
 .ed-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 18px; }
 .ed-actions-right { display: flex; gap: 8px; }
+
+/* ============================ MATCH DETAIL (en vivo) ============================ */
+.detail { padding: 0 20px 20px; }
+.detail.loading, .detail.empty { color: var(--muted); font-size: 12.5px; padding: 14px 20px 20px; }
+.detail-h { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding-top: 16px; }
+.livebadge { display: inline-flex; align-items: center; gap: 5px; color: var(--live); font-size: 9px; letter-spacing: .1em; }
+.livebadge .pd { width: 6px; height: 6px; border-radius: 50%; background: var(--live); box-shadow: 0 0 7px var(--live); animation: pulse 1.3s ease-in-out infinite; }
+
+.tl-row { display: flex; align-items: center; gap: 9px; padding: 5px 0; font-size: 13px; }
+.tl-row.a { flex-direction: row-reverse; text-align: right; }
+.tl-min { font-family: var(--mono); font-weight: 700; font-size: 11px; color: var(--muted); min-width: 26px; flex: 0 0 auto; }
+.tl-tag { font-family: var(--body); font-weight: 800; font-size: 9px; letter-spacing: .04em; text-transform: uppercase; padding: 2px 6px; border-radius: 5px; flex: 0 0 auto; }
+.tl-tag.goal { background: var(--hit); color: #06140d; }
+.tl-tag.yellow { background: var(--gold); color: #3a2a00; }
+.tl-tag.red { background: var(--miss); color: #380707; }
+.tl-tag.sub { background: transparent; color: var(--muted); border: 1px solid var(--line-2); }
+.tl-player { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tl-assist { color: var(--muted); font-weight: 500; font-size: 11px; }
+
+.stbox { margin-top: 6px; }
+.st { margin-bottom: 11px; }
+.st-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 5px; }
+.st-top b { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 700; min-width: 38px; }
+.st-top b:last-child { text-align: right; }
+.st-top b.lead { color: var(--text); }
+.st-top span { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
+.st-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--readout); gap: 2px; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .4); }
+.st-bar .h { background: var(--accent); }
+.st-bar .a { background: var(--line-2); }
 
 /* ============================ TOAST ============================ */
 #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 18px); transform: translateX(-50%) translateY(14px); background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 10px 18px; font-size: 12.5px; font-weight: 800; letter-spacing: .01em; box-shadow: 0 12px 36px rgba(0, 0, 0, .5); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 200; max-width: 90vw; text-align: center; }

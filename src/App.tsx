@@ -25,6 +25,7 @@ import {
 import { syncResults } from "./lib/sync";
 import { useResults } from "./hooks/useResults";
 import { useLive } from "./hooks/useLive";
+import { useEventIds } from "./hooks/useEventIds";
 import { Header } from "./components/Header";
 import { TopBar } from "./components/TopBar";
 import { FilterBar } from "./components/FilterBar";
@@ -42,7 +43,13 @@ const GRUPOS = Object.keys(GROUPS);
 
 export default function App() {
   const { results, setScore, clearScore, applyPatch, resetAll } = useResults();
-  const { live: liveMap, finals } = useLive(MATCHES, GROUPS);
+  const { live: liveMap, finals, eventIds: liveEventIds } = useLive(MATCHES, GROUPS);
+  const seasonEventIds = useEventIds(MATCHES, GROUPS);
+  // IDs de evento para el detalle: eventsday (hoy, incluye live) + eventsseason.
+  const eventIds = useMemo(
+    () => ({ ...seasonEventIds, ...liveEventIds }),
+    [seasonEventIds, liveEventIds],
+  );
   // Resultados efectivos: tus cargas pisan los finales de la API; ambos pisan
   // la semilla (manejada dentro de effResult). Los finales NO se persisten.
   const eff = useMemo(() => ({ ...finals, ...results }), [finals, results]);
@@ -259,6 +266,8 @@ export default function App() {
         match={editMatch}
         results={eff}
         userLoaded={editMatch ? hasUser(editMatch, results) : false}
+        eventId={editMatch ? eventIds[editMatch.id] ?? null : null}
+        live={editMatch ? isLive(editMatch, eff, liveMap) : false}
         onSave={onSave}
         onClear={onClearScore}
         onClose={() => setEditId(null)}
