@@ -248,8 +248,8 @@ export default function App() {
           </p>
           <p className="credit">
             Desarrollado por{" "}
-            <a href="https://github.com/IsTincho" target="_blank" rel="noopener">
-              IsTincho
+            <a href="https://www.instagram.com/istincho_/" target="_blank" rel="noopener">
+              @istincho_
             </a>
           </p>
         </div>
