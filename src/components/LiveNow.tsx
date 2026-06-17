@@ -1,9 +1,8 @@
 import { useEffect, useState } from "react";
 import type { Match, Score } from "../types";
-import { teamMeta } from "../data";
 import type { MatchDetail, StatRow } from "../lib/matchDetail";
 import { fetchBestDetail } from "../lib/apiFootball";
-import { Flag, VsCrest } from "./Flag";
+import { Flag } from "./Flag";
 
 const POLL_MS = 30_000;
 
@@ -64,23 +63,17 @@ function LiveCard({ item, onOpen }: { item: LiveItem; onOpen: (id: string) => vo
       </div>
 
       <div className="lc-main">
-        <div className="lc-team h">
-          <Flag team={m.h} size="md" />
+        <div className="lc-team">
+          <Flag team={m.h} size="lg" />
           <span className="lc-nm">{m.h}</span>
         </div>
         <div className="lc-score">
           {score ? `${score[0]} : ${score[1]}` : "· : ·"}
         </div>
-        <div className="lc-team a">
+        <div className="lc-team">
+          <Flag team={m.a} size="lg" />
           <span className="lc-nm">{m.a}</span>
-          <Flag team={m.a} size="md" />
         </div>
-      </div>
-
-      <div className="lc-sub">
-        <span className="lc-cf">{teamMeta(m.h)}</span>
-        <VsCrest home={m.h} away={m.a} />
-        <span className="lc-cf">{teamMeta(m.a)}</span>
       </div>
 
       {lastGoal && (

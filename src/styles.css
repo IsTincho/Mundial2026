@@ -374,15 +374,13 @@ dialog#editor::backdrop { background: rgba(5, 6, 8, .74); backdrop-filter: blur(
 .lc-tag .pd { width: 6px; height: 6px; border-radius: 50%; background: var(--live); animation: pulse 1.2s ease-in-out infinite; }
 .lc-min { font-family: var(--mono); font-size: 11px; color: var(--text); font-weight: 700; }
 .lc-grp { margin-left: auto; font-family: var(--mono); font-size: 9.5px; color: var(--dim); text-transform: uppercase; }
-.lc-main { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
-.lc-team { display: flex; align-items: center; gap: 9px; min-width: 0; }
-.lc-team.h { justify-content: flex-end; }
-.lc-nm { font-family: var(--display); font-size: clamp(16px, 5vw, 20px); text-transform: uppercase; line-height: .95; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lc-score { font-family: var(--mono); font-weight: 800; font-size: 28px; color: var(--live); font-variant-numeric: tabular-nums; white-space: nowrap; text-shadow: 0 0 14px color-mix(in srgb, var(--live) 40%, transparent); }
-.lc-sub { display: flex; align-items: center; justify-content: center; gap: 12px; }
-.lc-cf { font-family: var(--mono); font-size: 9px; color: var(--dim); text-transform: uppercase; flex: 1; }
-.lc-sub .lc-cf:first-child { text-align: right; }
-.lc-goal { font-size: 12px; color: var(--text); text-align: center; }
+.lc-main { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: start; gap: 8px; padding: 6px 0 4px; }
+.lc-team { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; text-align: center; }
+.lc-team .flag { font-size: 30px; border-radius: 4px; }
+.lc-team .flag-fallback { width: 40px; height: 30px; font-size: 12px; }
+.lc-nm { font-family: var(--display); font-size: clamp(14px, 4.4vw, 19px); text-transform: uppercase; line-height: 1; letter-spacing: .01em; word-break: break-word; width: 100%; }
+.lc-score { align-self: center; font-family: var(--mono); font-weight: 800; font-size: clamp(28px, 9vw, 36px); color: var(--live); font-variant-numeric: tabular-nums; white-space: nowrap; padding-top: 8px; text-shadow: 0 0 16px color-mix(in srgb, var(--live) 45%, transparent); }
+.lc-goal { font-size: 12px; color: var(--text); text-align: center; margin-top: 2px; }
 .lc-goal .g { font-family: var(--body); font-weight: 800; font-size: 9px; text-transform: uppercase; background: var(--hit); color: #06140d; padding: 2px 6px; border-radius: 5px; margin-right: 5px; }
 .lc-goal .as { color: var(--muted); }
 .lc-stats { display: grid; gap: 8px; margin-top: 2px; }
