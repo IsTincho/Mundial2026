@@ -96,7 +96,13 @@ export async function espnDetail(eid: string): Promise<MatchDetail | null> {
     if (!res.ok) return null;
     const data = (await res.json()) as (MatchDetail & { error?: string }) | null;
     if (!data || data.error || (!data.events?.length && !data.stats?.length)) return null;
-    return { events: data.events, stats: data.stats };
+    return {
+      events: data.events,
+      stats: data.stats,
+      info: data.info,
+      winprob: data.winprob,
+      lineups: data.lineups,
+    };
   } catch {
     clearTimeout(timer);
     return null;

@@ -19,9 +19,38 @@ export interface StatRow {
   pct: boolean;       // si es porcentaje (posesión, precisión)
 }
 
+export interface MatchInfo {
+  venue?: string;
+  city?: string;
+  country?: string;
+  referee?: string;
+}
+
+export interface LineupPlayer {
+  name: string;
+  pos: string;
+  num: string;
+  starter: boolean;
+}
+
+export interface Lineup {
+  formation: string;
+  players: LineupPlayer[];
+}
+
+export interface WinProb {
+  home: number; // 0–100
+  draw: number;
+  away: number;
+  live: boolean; // true = en vivo, false = pre-partido (predictor)
+}
+
 export interface MatchDetail {
   events: TimelineEvent[];
   stats: StatRow[];
+  info?: MatchInfo;
+  winprob?: WinProb | null;
+  lineups?: { home: Lineup; away: Lineup } | null;
 }
 
 const BASE = "https://www.thesportsdb.com/api/v1/json/123";

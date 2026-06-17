@@ -41,6 +41,14 @@ function toNum(v) {
   return Number.isNaN(n) ? null : n;
 }
 
+// Porcentaje normalizado a 0–100 (ESPN a veces da 0–1, a veces 0–100).
+function toPct(v) {
+  if (v == null || v === "") return null;
+  const n = parseFloat(String(v).replace(/[^\d.-]/g, ""));
+  if (Number.isNaN(n)) return null;
+  return Math.round((n <= 1 ? n * 100 : n) * 10) / 10;
+}
+
 // ----------------------------- SCOREBOARD -----------------------------
 
 function parseScoreboard(data, out) {
@@ -166,7 +174,64 @@ async function detail(eid) {
     .filter((e) => e.type)
     .sort((a, b) => a.min - b.min);
 
-  return json({ events, stats, hs, as }, 200, 12);
+  // INFO: sede, ciudad, árbitro
+  const gi = data?.gameInfo || {};
+  const officials = gi.officials || [];
+  const refO =
+    officials.find((o) => /referee/i.test(o.position?.name || o.position?.displayName || "")) ||
+    officials[0];
+  const info = {
+    venue: gi.venue?.fullName || "",
+    city: gi.venue?.address?.city || "",
+    country: gi.venue?.address?.country || "",
+    referee: refO?.displayName || "",
+  };
+
+  // PROBABILIDAD: predictor (pre-partido) o winprobability (en vivo)
+  let winprob = null;
+  const wp = data?.winprobability;
+  if (Array.isArray(wp) && wp.length) {
+    const last = wp[wp.length - 1];
+    const h = toPct(last.homeWinPercentage);
+    const d = toPct(last.tiePercentage);
+    if (h != null) {
+      const draw = d ?? 0;
+      winprob = { home: h, draw, away: Math.max(0, Math.round((100 - h - draw) * 10) / 10), live: true };
+    }
+  }
+  if (!winprob && data?.predictor) {
+    const pr = data.predictor;
+    const h = toPct(pr.homeTeam?.gameProjection);
+    const a = toPct(pr.awayTeam?.gameProjection);
+    const d = toPct(pr.homeTeam?.tieProjection ?? pr.tieProjection);
+    if (h != null && a != null) {
+      winprob = { home: h, draw: d ?? Math.max(0, Math.round((100 - h - a) * 10) / 10), away: a, live: false };
+    }
+  }
+
+  // ALINEACIONES
+  const rosters = data?.rosters || [];
+  const lineupOf = (block) => {
+    const players = (block?.roster || [])
+      .map((r) => ({
+        name: r.athlete?.displayName || r.athlete?.shortName || "",
+        pos: r.position?.abbreviation || r.position?.name || "",
+        num: String(r.jersey ?? r.athlete?.jersey ?? ""),
+        starter: !!r.starter,
+      }))
+      .filter((p) => p.name);
+    return { formation: block?.formation || "", players };
+  };
+  const homeR =
+    rosters.find((r) => String(r.team?.id) === homeId) || rosters.find((r) => r.homeAway === "home");
+  const awayR =
+    rosters.find((r) => String(r.team?.id) === awayId) || rosters.find((r) => r.homeAway === "away");
+  let lineups = null;
+  if ((homeR?.roster || awayR?.roster) && (homeR || awayR)) {
+    lineups = { home: lineupOf(homeR), away: lineupOf(awayR) };
+  }
+
+  return json({ events, stats, hs, as, info, winprob, lineups }, 200, 12);
 }
 
 // ------------------------------- ROUTER -------------------------------

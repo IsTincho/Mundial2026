@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { MatchDetail, TimelineEvent } from "../lib/matchDetail";
+import type { Lineup, MatchDetail, TimelineEvent } from "../lib/matchDetail";
 import { fetchBestDetail } from "../lib/apiFootball";
 
 const POLL_MS = 30_000;
@@ -28,15 +28,45 @@ function Row({ e }: { e: TimelineEvent }) {
   );
 }
 
+function LineupCol({ side, name, lu }: { side: string; name: string; lu: Lineup }) {
+  const starters = lu.players.filter((p) => p.starter);
+  const subs = lu.players.filter((p) => !p.starter);
+  const list = starters.length ? starters : lu.players;
+  return (
+    <div className={"lu-col " + side}>
+      <div className="lu-head">
+        <span className="lu-team">{name}</span>
+        {lu.formation && <span className="lu-form">{lu.formation}</span>}
+      </div>
+      <ul className="lu-list">
+        {list.map((p, i) => (
+          <li key={i}>
+            {p.num && <span className="lu-num">{p.num}</span>}
+            <span className="lu-name">{p.name}</span>
+            {p.pos && <span className="lu-pos">{p.pos}</span>}
+          </li>
+        ))}
+      </ul>
+      {starters.length > 0 && subs.length > 0 && (
+        <div className="lu-subs">Suplentes: {subs.map((p) => p.name).join(", ")}</div>
+      )}
+    </div>
+  );
+}
+
 export function MatchDetailPanel({
   eventId,
   afFid,
   espnEid,
+  home,
+  away,
   live,
 }: {
   eventId: string | null;
   afFid: number | null;
   espnEid: string | null;
+  home?: string;
+  away?: string;
   live: boolean;
 }) {
   const [detail, setDetail] = useState<MatchDetail | null>(null);
@@ -67,17 +97,29 @@ export function MatchDetailPanel({
     return <div className="detail empty">Sin detalle disponible todavía.</div>;
   }
 
+  const wp = detail.winprob;
+  const info = detail.info;
+
   return (
     <div className="detail">
-      {detail.events.length > 0 && (
-        <div className="tl">
+      {wp && (
+        <div className="wp">
           <div className="detail-h">
-            Minuto a minuto
-            {live && <span className="livebadge"><span className="pd" />vivo</span>}
+            Probabilidad
+            <span className={"wp-src" + (wp.live ? " live" : "")}>
+              {wp.live ? "en vivo" : "pre-partido"}
+            </span>
           </div>
-          {detail.events.map((e, i) => (
-            <Row e={e} key={i} />
-          ))}
+          <div className="wp-bar" aria-hidden="true">
+            <span className="ph" style={{ width: wp.home + "%" }} />
+            <span className="pd" style={{ width: wp.draw + "%" }} />
+            <span className="pa" style={{ width: wp.away + "%" }} />
+          </div>
+          <div className="wp-labs">
+            <span className="pl"><b>{Math.round(wp.home)}%</b> {home}</span>
+            <span className="pm">Empate <b>{Math.round(wp.draw)}%</b></span>
+            <span className="pr">{away} <b>{Math.round(wp.away)}%</b></span>
+          </div>
         </div>
       )}
 
@@ -101,6 +143,37 @@ export function MatchDetailPanel({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {detail.events.length > 0 && (
+        <div className="tl">
+          <div className="detail-h">
+            Minuto a minuto
+            {live && <span className="livebadge"><span className="pd" />vivo</span>}
+          </div>
+          {detail.events.map((e, i) => (
+            <Row e={e} key={i} />
+          ))}
+        </div>
+      )}
+
+      {detail.lineups && (detail.lineups.home.players.length > 0 || detail.lineups.away.players.length > 0) && (
+        <div className="lu">
+          <div className="detail-h">Alineaciones</div>
+          <div className="lu-grid">
+            <LineupCol side="h" name={home || "Local"} lu={detail.lineups.home} />
+            <LineupCol side="a" name={away || "Visita"} lu={detail.lineups.away} />
+          </div>
+        </div>
+      )}
+
+      {info && (info.venue || info.referee) && (
+        <div className="ginfo">
+          {info.venue && (
+            <span>🏟 {info.venue}{info.city ? ` · ${info.city}` : ""}</span>
+          )}
+          {info.referee && <span>🧑‍⚖️ {info.referee}</span>}
         </div>
       )}
     </div>

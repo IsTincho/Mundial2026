@@ -193,7 +193,14 @@ export function Editor({
       </form>
 
       {(eventId || afFid || espnEid) && (
-        <MatchDetailPanel eventId={eventId} afFid={afFid} espnEid={espnEid} live={live} />
+        <MatchDetailPanel
+          eventId={eventId}
+          afFid={afFid}
+          espnEid={espnEid}
+          home={match?.h}
+          away={match?.a}
+          live={live}
+        />
       )}
     </dialog>
   );
