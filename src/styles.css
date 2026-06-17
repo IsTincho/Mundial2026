@@ -395,16 +395,23 @@ dialog#editor::backdrop { background: rgba(5, 6, 8, .74); backdrop-filter: blur(
 .lc-cta { font-family: var(--body); font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--live); text-align: right; }
 
 /* ============================ MATCH DETAIL (en vivo) ============================ */
-.detail { padding: 0 20px 20px; }
+.detail { padding: 0 16px 20px; }
 .detail.loading, .detail.empty { color: var(--muted); font-size: 12.5px; padding: 14px 20px 20px; }
-.detail-h { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 16px 0 10px; display: flex; align-items: center; gap: 8px; border-top: 1px solid var(--line); padding-top: 16px; }
-.livebadge { display: inline-flex; align-items: center; gap: 5px; color: var(--live); font-size: 9px; letter-spacing: .1em; }
+
+/* Sección tipo "tarjeta de menú" (estética FIFA) */
+.dsec { background: linear-gradient(180deg, var(--surface), var(--surface-2)); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 13px 14px 15px; margin-top: 11px; box-shadow: var(--hi), var(--sh-sm); }
+.detail-h { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin: 0 0 12px; display: flex; align-items: center; gap: 8px; position: relative; padding-left: 11px; }
+.detail-h::before { content: ""; position: absolute; left: 0; top: 0; bottom: 1px; width: 3px; border-radius: 2px; background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 40%, var(--gold))); }
+.detail-h .wp-src { margin-left: auto; }
+.livebadge { display: inline-flex; align-items: center; gap: 5px; color: var(--live); font-size: 9px; letter-spacing: .1em; margin-left: auto; }
 .livebadge .pd { width: 6px; height: 6px; border-radius: 50%; background: var(--live); box-shadow: 0 0 7px var(--live); animation: pulse 1.3s ease-in-out infinite; }
 
-.tl-row { display: flex; align-items: center; gap: 9px; padding: 5px 0; font-size: 13px; }
+/* Timeline con espina central */
+.tl-row { display: flex; align-items: center; gap: 9px; padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--line); }
+.tl-row:last-child { border-bottom: 0; }
 .tl-row.a { flex-direction: row-reverse; text-align: right; }
-.tl-min { font-family: var(--mono); font-weight: 700; font-size: 11px; color: var(--muted); min-width: 26px; flex: 0 0 auto; }
-.tl-tag { font-family: var(--body); font-weight: 800; font-size: 9px; letter-spacing: .04em; text-transform: uppercase; padding: 2px 6px; border-radius: 5px; flex: 0 0 auto; }
+.tl-min { font-family: var(--mono); font-weight: 800; font-size: 11px; color: var(--accent); min-width: 30px; flex: 0 0 auto; }
+.tl-tag { font-family: var(--body); font-weight: 800; font-size: 9px; letter-spacing: .04em; text-transform: uppercase; padding: 2px 7px; border-radius: var(--r-pill); flex: 0 0 auto; }
 .tl-tag.goal { background: var(--hit); color: #06140d; }
 .tl-tag.yellow { background: var(--gold); color: #3a2a00; }
 .tl-tag.red { background: var(--miss); color: #380707; }
@@ -412,49 +419,59 @@ dialog#editor::backdrop { background: rgba(5, 6, 8, .74); backdrop-filter: blur(
 .tl-player { font-weight: 700; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tl-assist { color: var(--muted); font-weight: 500; font-size: 11px; }
 
-.stbox { margin-top: 6px; }
-.st { margin-bottom: 11px; }
-.st-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 5px; }
-.st-top b { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 700; min-width: 38px; }
+/* Estadísticas: valores grandes + barra comparativa */
+.st { margin-bottom: 12px; }
+.st:last-child { margin-bottom: 0; }
+.st-top { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 6px; }
+.st-top b { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 800; min-width: 42px; }
 .st-top b:last-child { text-align: right; }
-.st-top b.lead { color: var(--text); }
-.st-top span { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--dim); }
-.st-bar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--readout); gap: 2px; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .4); }
-.st-bar .h { background: var(--accent); }
-.st-bar .a { background: var(--line-2); }
+.st-top b.lead:first-child { color: var(--accent); }
+.st-top b.lead:last-child { color: var(--gold); }
+.st-top span { font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.st-bar { display: flex; height: 8px; border-radius: var(--r-pill); overflow: hidden; background: var(--readout); gap: 2px; box-shadow: inset 0 1px 3px rgba(0, 0, 0, .4); }
+.st-bar .h { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 55%, #1c6), var(--accent)); border-radius: var(--r-pill); }
+.st-bar .a { background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 70%, #b80), var(--gold)); border-radius: var(--r-pill); }
 
-/* Probabilidad (win prob ESPN) */
-.wp { margin-top: 6px; }
-.wp-src { font-family: var(--mono); font-size: 9px; letter-spacing: .08em; color: var(--dim); border: 1px solid var(--line-2); border-radius: 5px; padding: 1px 6px; text-transform: uppercase; }
+/* Probabilidad: números grandes estilo marcador */
+.wp-src { font-family: var(--mono); font-size: 9px; letter-spacing: .08em; color: var(--dim); border: 1px solid var(--line-2); border-radius: var(--r-pill); padding: 2px 8px; text-transform: uppercase; }
 .wp-src.live { color: var(--live); border-color: color-mix(in srgb, var(--live) 45%, transparent); }
-.wp-bar { display: flex; height: 9px; border-radius: 5px; overflow: hidden; background: var(--readout); box-shadow: inset 0 1px 3px rgba(0,0,0,.4); }
-.wp-bar span { height: 100%; transition: width .5s ease; }
+.wp-big { display: flex; justify-content: space-between; align-items: baseline; margin: 2px 2px 10px; font-family: var(--display); }
+.wp-big span { font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
+.wp-big small { font-size: 13px; opacity: .55; font-family: var(--mono); }
+.wp-big .pl { color: var(--accent); }
+.wp-big .pm { color: var(--muted); font-size: 23px; }
+.wp-big .pr { color: var(--gold); }
+.wp-bar { display: flex; height: 10px; border-radius: var(--r-pill); overflow: hidden; background: var(--readout); box-shadow: inset 0 1px 3px rgba(0,0,0,.4); gap: 2px; }
+.wp-bar span { height: 100%; transition: width .5s ease; border-radius: var(--r-pill); }
 .wp-bar .ph { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 60%, #1c6), var(--accent)); }
-.wp-bar .pd { background: color-mix(in srgb, var(--muted) 55%, transparent); }
+.wp-bar .pd { background: color-mix(in srgb, var(--muted) 50%, transparent); }
 .wp-bar .pa { background: linear-gradient(90deg, var(--gold), color-mix(in srgb, var(--gold) 70%, #b80)); }
-.wp-labs { display: flex; justify-content: space-between; gap: 8px; margin-top: 7px; font-size: 11px; color: var(--muted); }
-.wp-labs b { font-family: var(--mono); font-weight: 700; }
-.wp-labs .pl b { color: var(--accent); }
-.wp-labs .pr b { color: var(--gold); }
+.wp-labs { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 11px; font-weight: 700; color: var(--muted); }
+.wp-labs .pl { color: var(--accent); }
+.wp-labs .pr { color: var(--gold); }
 .wp-labs .pm { color: var(--dim); }
+.wp-labs span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wp-labs .pr { text-align: right; }
 
-/* Alineaciones */
-.lu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.lu-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 7px; }
+/* Alineaciones con dorsal en chapita */
+.lu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 14px; }
+.lu-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 9px; }
 .lu-col.a .lu-head { flex-direction: row-reverse; }
 .lu-team { font-weight: 800; font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.lu-form { font-family: var(--mono); font-size: 9.5px; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent); border-radius: 5px; padding: 1px 5px; flex: 0 0 auto; }
+.lu-form { font-family: var(--mono); font-size: 9.5px; color: var(--gold); border: 1px solid color-mix(in srgb, var(--gold) 35%, transparent); border-radius: var(--r-pill); padding: 1px 7px; flex: 0 0 auto; }
 .lu-list { list-style: none; margin: 0; padding: 0; }
-.lu-list li { display: flex; align-items: center; gap: 7px; padding: 3px 0; font-size: 12.5px; }
+.lu-list li { display: flex; align-items: center; gap: 8px; padding: 4px 0; font-size: 12.5px; }
 .lu-col.a .lu-list li { flex-direction: row-reverse; text-align: right; }
-.lu-num { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--muted); min-width: 18px; text-align: center; flex: 0 0 auto; }
+.lu-num { display: inline-flex; align-items: center; justify-content: center; width: 21px; height: 21px; border-radius: 7px; background: var(--readout); border: 1px solid var(--line-2); font-family: var(--mono); font-size: 10px; font-weight: 800; color: var(--accent); flex: 0 0 auto; }
+.lu-col.a .lu-num { color: var(--gold); }
 .lu-name { font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lu-pos { font-family: var(--mono); font-size: 8.5px; color: var(--dim); margin-left: auto; flex: 0 0 auto; }
 .lu-col.a .lu-pos { margin-left: 0; margin-right: auto; }
-.lu-subs { margin-top: 8px; font-size: 10.5px; color: var(--dim); line-height: 1.45; grid-column: 1 / -1; }
+.lu-subs { margin-top: 10px; padding-top: 9px; border-top: 1px solid var(--line); font-size: 10.5px; color: var(--dim); line-height: 1.5; grid-column: 1 / -1; }
 
-/* Info del partido (sede, árbitro) */
-.ginfo { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); font-size: 11.5px; color: var(--muted); }
+/* Info del partido (sede): chips */
+.ginfo { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 11px; }
+.ginfo span { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r-pill); padding: 6px 12px; font-size: 11.5px; color: var(--muted); }
 
 /* ============================ TOAST ============================ */
 #toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom) + 18px); transform: translateX(-50%) translateY(14px); background: var(--accent); color: var(--accent-ink); border-radius: 999px; padding: 10px 18px; font-size: 12.5px; font-weight: 800; letter-spacing: .01em; box-shadow: 0 12px 36px rgba(0, 0, 0, .5); opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 200; max-width: 90vw; text-align: center; }

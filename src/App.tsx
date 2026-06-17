@@ -3,6 +3,7 @@ import type {
   ConfFilter,
   Filters,
   Match,
+  Results,
   StatusFilter,
   View,
   ViewMode,
@@ -129,6 +130,21 @@ export default function App() {
     // applyPatch es estable (useCallback); effRef siempre tiene el eff actual
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Persistir los finales de ESPN: apenas ESPN da un resultado, lo guardamos
+  // (si no lo cargaste vos), para que el partido no vuelva a verse pendiente
+  // aunque salga de la ventana de fechas de ESPN.
+  const resultsRef = useRef(results);
+  resultsRef.current = results;
+  useEffect(() => {
+    const p: Results = {};
+    for (const id in espn.finals) {
+      if (!(id in resultsRef.current)) p[id] = espn.finals[id];
+    }
+    if (Object.keys(p).length) applyPatch(p);
+    // applyPatch es estable; resultsRef siempre tiene el valor actual
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [espn.finals]);
 
   const stats = useMemo(() => tracker(MATCHES, eff), [eff]);
   const liveItems = useMemo<LiveItem[]>(

@@ -75,12 +75,10 @@ function parseScoreboard(data, out) {
 
 async function scoreboard() {
   const now = new Date();
-  // ayer, hoy y mañana: cubre finalizados recientes, en vivo y próximos.
-  const days = [
-    ymd(new Date(now.getTime() - 864e5)),
-    ymd(now),
-    ymd(new Date(now.getTime() + 864e5)),
-  ];
+  // Ventana amplia: de 7 días atrás a 2 adelante. Cubre fechas ya jugadas
+  // (resultados finales) + en vivo + próximos, sin depender de la semilla.
+  const days = [];
+  for (let i = -7; i <= 2; i++) days.push(ymd(new Date(now.getTime() + i * 864e5)));
   const results = await Promise.all(
     days.map((d) => espn(`${ROOT}/scoreboard?dates=${d}`).catch(() => null)),
   );

@@ -105,12 +105,17 @@ export function MatchDetailPanel({
   return (
     <div className="detail">
       {wp && (
-        <div className="wp">
+        <div className="wp dsec">
           <div className="detail-h">
             Probabilidad
             <span className={"wp-src" + (wp.live ? " live" : "")}>
-              {wp.live ? "en vivo" : "pre-partido"}
+              {wp.live ? "en vivo" : "según cuotas"}
             </span>
+          </div>
+          <div className="wp-big">
+            <span className="pl">{Math.round(wp.home)}<small>%</small></span>
+            <span className="pm">{Math.round(wp.draw)}<small>%</small></span>
+            <span className="pr">{Math.round(wp.away)}<small>%</small></span>
           </div>
           <div className="wp-bar" aria-hidden="true">
             <span className="ph" style={{ width: wp.home + "%" }} />
@@ -118,15 +123,15 @@ export function MatchDetailPanel({
             <span className="pa" style={{ width: wp.away + "%" }} />
           </div>
           <div className="wp-labs">
-            <span className="pl"><b>{Math.round(wp.home)}%</b> {home}</span>
-            <span className="pm">Empate <b>{Math.round(wp.draw)}%</b></span>
-            <span className="pr">{away} <b>{Math.round(wp.away)}%</b></span>
+            <span className="pl">{home}</span>
+            <span className="pm">Empate</span>
+            <span className="pr">{away}</span>
           </div>
         </div>
       )}
 
       {detail.stats.length > 0 && (
-        <div className="stbox">
+        <div className="stbox dsec">
           <div className="detail-h">Estadísticas</div>
           {detail.stats.map((s, i) => {
             const tot = s.hv + s.av;
@@ -149,7 +154,7 @@ export function MatchDetailPanel({
       )}
 
       {detail.events.length > 0 && (
-        <div className="tl">
+        <div className="tl dsec">
           <div className="detail-h">
             Minuto a minuto
             {live && <span className="livebadge"><span className="pd" />vivo</span>}
@@ -161,7 +166,7 @@ export function MatchDetailPanel({
       )}
 
       {detail.lineups && (detail.lineups.home.players.length > 0 || detail.lineups.away.players.length > 0) && (
-        <div className="lu">
+        <div className="lu dsec">
           <div className="detail-h">Alineaciones</div>
           <div className="lu-grid">
             <LineupCol side="h" name={home || "Local"} lu={detail.lineups.home} />
