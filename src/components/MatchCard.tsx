@@ -1,6 +1,7 @@
 import type { LiveMap, Match, Results } from "../types";
 import { teamMeta } from "../data";
 import { effResult, fmtDate, isLive, localDate, localTime, verdict } from "../lib/logic";
+import { predict, pct } from "../lib/model";
 import { VerdictTag } from "./Score";
 import { Flag, VsCrest } from "./Flag";
 
@@ -23,9 +24,13 @@ export function MatchCard({
   const liveScore = live ? liveMap[m.id] : null;
   const vd = verdict(m, results, liveMap);
   const conf = typeof m.c === "number" ? m.c : 0;
-  const pct = Math.max(0, Math.min(100, conf * 10));
+  const confPct = Math.max(0, Math.min(100, conf * 10));
   const lowConf = conf < 6;
   const serial = String(m.n).padStart(3, "0");
+  const pr = predict(m);
+  const ph = pct(pr.pHome);
+  const pd = pct(pr.pDraw);
+  const pa = pct(pr.pAway);
 
   return (
     <button
@@ -97,10 +102,24 @@ export function MatchCard({
         </div>
       </div>
 
+      <div className="probs">
+        <div className="pbar" aria-hidden="true">
+          <span className="ph" style={{ width: ph + "%" }} />
+          <span className="pd" style={{ width: pd + "%" }} />
+          <span className="pa" style={{ width: pa + "%" }} />
+        </div>
+        <div className="plabs">
+          <span className="pl"><b>{ph}%</b> {m.h}</span>
+          <span className="pm">Empate <b>{pd}%</b></span>
+          <span className="pr">{m.a} <b>{pa}%</b></span>
+        </div>
+        <div className="pxg">xG {pr.xgHome.toFixed(1)} – {pr.xgAway.toFixed(1)}</div>
+      </div>
+
       <div className="conf">
         <span className="cl">Conf</span>
         <span className="track">
-          <span className="fill" style={{ width: pct + "%" }} />
+          <span className="fill" style={{ width: confPct + "%" }} />
           <span className="ticks" aria-hidden="true" />
         </span>
         <span className="cv">{conf.toFixed(1)}</span>
