@@ -31,10 +31,12 @@ function Row({ e }: { e: TimelineEvent }) {
 export function MatchDetailPanel({
   eventId,
   afFid,
+  espnEid,
   live,
 }: {
   eventId: string | null;
   afFid: number | null;
+  espnEid: string | null;
   live: boolean;
 }) {
   const [detail, setDetail] = useState<MatchDetail | null>(null);
@@ -45,7 +47,7 @@ export function MatchDetailPanel({
     setLoading(true);
     setDetail(null);
     const tick = () =>
-      fetchBestDetail(afFid, eventId).then((d) => {
+      fetchBestDetail(afFid, eventId, espnEid).then((d) => {
         if (!alive) return;
         setDetail(d);
         setLoading(false);
@@ -56,7 +58,7 @@ export function MatchDetailPanel({
       alive = false;
       if (id) clearInterval(id);
     };
-  }, [eventId, afFid, live]);
+  }, [eventId, afFid, espnEid, live]);
 
   if (loading) {
     return <div className="detail loading">Cargando detalle…</div>;

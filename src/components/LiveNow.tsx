@@ -12,6 +12,7 @@ export interface LiveItem {
   score: Score | null;
   eventId?: string;
   afFid?: number;
+  espnEid?: string;
   progress?: string;
 }
 
@@ -35,20 +36,20 @@ function topStats(stats: StatRow[]): StatRow[] {
 }
 
 function LiveCard({ item, onOpen }: { item: LiveItem; onOpen: (id: string) => void }) {
-  const { m, score, eventId, afFid, progress } = item;
+  const { m, score, eventId, afFid, espnEid, progress } = item;
   const [detail, setDetail] = useState<MatchDetail | null>(null);
 
   useEffect(() => {
-    if (!eventId && !afFid) return;
+    if (!eventId && !afFid && !espnEid) return;
     let alive = true;
-    const tick = () => fetchBestDetail(afFid, eventId).then((d) => alive && setDetail(d));
+    const tick = () => fetchBestDetail(afFid, eventId, espnEid).then((d) => alive && setDetail(d));
     tick();
     const id = setInterval(tick, POLL_MS);
     return () => {
       alive = false;
       clearInterval(id);
     };
-  }, [eventId, afFid]);
+  }, [eventId, afFid, espnEid]);
 
   const stats = detail ? topStats(detail.stats) : [];
   const lastGoal = detail?.events.filter((e) => /goal/i.test(e.type)).slice(-1)[0];

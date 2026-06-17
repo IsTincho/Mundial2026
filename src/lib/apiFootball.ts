@@ -4,6 +4,7 @@
 import type { Match, Score, Team } from "../types";
 import type { MatchDetail } from "./matchDetail";
 import { fetchDetail } from "./matchDetail";
+import { espnDetail } from "./espn";
 import { makeNameMapper } from "./names";
 
 export interface AfLiveEntry {
@@ -102,11 +103,17 @@ export async function afDetail(fid: number): Promise<MatchDetail | null> {
   return { events: data.events, stats: data.stats };
 }
 
-// Mejor detalle disponible: API-Football si hay fixture id, si no TheSportsDB.
+// Mejor detalle disponible: ESPN (gratis) → API-Football (si hay key) →
+// TheSportsDB. El primero que devuelva algo, gana.
 export async function fetchBestDetail(
   afFid?: number | null,
   eventId?: string | null,
+  espnEid?: string | null,
 ): Promise<MatchDetail | null> {
+  if (espnEid) {
+    const d = await espnDetail(espnEid);
+    if (d) return d;
+  }
   if (afFid) {
     const d = await afDetail(afFid);
     if (d) return d;

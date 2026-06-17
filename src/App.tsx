@@ -138,9 +138,10 @@ export default function App() {
         score: liveMap[m.id] ?? null,
         eventId: eventIds[m.id],
         afFid: afFids[m.id],
+        espnEid: espn.eventIds[m.id],
         progress: progress[m.id],
       })),
-    [eff, liveMap, eventIds, progress, afFids],
+    [eff, liveMap, eventIds, progress, afFids, espn.eventIds],
   );
   const liveCount = liveItems.length;
   const counts = useMemo(() => statusCounts(MATCHES, eff, liveMap), [eff, liveMap]);
@@ -358,6 +359,7 @@ export default function App() {
         userLoaded={editMatch ? hasUser(editMatch, results) : false}
         eventId={editMatch ? eventIds[editMatch.id] ?? null : null}
         afFid={editMatch ? afFids[editMatch.id] ?? null : null}
+        espnEid={editMatch ? espn.eventIds[editMatch.id] ?? null : null}
         ko={editMatch ? kickoffs[editMatch.id] ?? "" : ""}
         live={editMatch ? isLive(editMatch, eff, liveMap) : false}
         onSave={onSave}

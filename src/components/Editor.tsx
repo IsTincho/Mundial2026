@@ -20,6 +20,7 @@ export function Editor({
   userLoaded,
   eventId,
   afFid,
+  espnEid,
   ko,
   live,
   onSave,
@@ -31,6 +32,7 @@ export function Editor({
   userLoaded: boolean;
   eventId: string | null;
   afFid: number | null;
+  espnEid: string | null;
   ko: string;
   live: boolean;
   onSave: (id: string, score: Score) => void;
@@ -190,8 +192,8 @@ export function Editor({
         </div>
       </form>
 
-      {(eventId || afFid) && (
-        <MatchDetailPanel eventId={eventId} afFid={afFid} live={live} />
+      {(eventId || afFid || espnEid) && (
+        <MatchDetailPanel eventId={eventId} afFid={afFid} espnEid={espnEid} live={live} />
       )}
     </dialog>
   );
