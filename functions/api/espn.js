@@ -237,31 +237,33 @@ async function detail(eid) {
 // ------------------------- DEBUG (temporal) ---------------------------
 // Muestra la estructura real del summary de un partido en vivo (o el primero
 // disponible) para mapear bien alineaciones, sede y árbitro.
-async function debug() {
-  const sb = await espn(`${ROOT}/scoreboard?dates=${ymd(new Date())}`).catch(() => null);
-  const evs = sb?.events || [];
-  const ev =
-    evs.find((e) => e.status?.type?.state === "in") ||
-    evs.find((e) => e.status?.type?.state === "post") ||
-    evs[0];
+async function debug(eidParam) {
+  let ev;
+  if (eidParam) {
+    ev = { id: eidParam };
+  } else {
+    // varios días, para encontrar un partido jugado (con alineaciones).
+    const now = new Date();
+    const days = [
+      ymd(new Date(now.getTime() - 864e5)),
+      ymd(now),
+    ];
+    const sbs = await Promise.all(days.map((d) => espn(`${ROOT}/scoreboard?dates=${d}`).catch(() => null)));
+    const evs = [];
+    for (const sb of sbs) for (const e of sb?.events || []) evs.push(e);
+    ev =
+      evs.find((e) => e.status?.type?.state === "in") ||
+      evs.find((e) => e.status?.type?.state === "post") ||
+      evs[0];
+  }
   if (!ev) return json({ error: "no-event" });
   const data = await espn(`${ROOT}/summary?event=${ev.id}`, 5);
-  const gi = data.gameInfo;
   const r0 = Array.isArray(data.rosters) ? data.rosters[0] : null;
   return json({
     eid: ev.id,
-    topKeys: Object.keys(data || {}),
-    gameInfo: gi
-      ? { keys: Object.keys(gi), venue: gi.venue, officialsLen: (gi.officials || []).length, official0: gi.officials?.[0] }
-      : (data.gameInfo === undefined ? "undefined" : data.gameInfo),
-    rosters: r0
-      ? { len: data.rosters.length, keys0: Object.keys(r0), rosterLen0: (r0.roster || []).length, player0: (r0.roster || [])[0] }
-      : (data.rosters === undefined ? "undefined" : typeof data.rosters),
-    boxscoreKeys: data.boxscore ? Object.keys(data.boxscore) : null,
-    predictorKeys: data.predictor ? Object.keys(data.predictor) : null,
-    predictor: data.predictor,
-    winprobLen: Array.isArray(data.winprobability) ? data.winprobability.length : null,
-    winprob0: Array.isArray(data.winprobability) ? data.winprobability[0] : null,
+    rosters0_full: r0,
+    pickcenter0: Array.isArray(data.pickcenter) ? data.pickcenter[0] : data.pickcenter,
+    odds0: Array.isArray(data.odds) ? data.odds[0] : data.odds,
   });
 }
 
@@ -271,7 +273,7 @@ export async function onRequestGet({ request }) {
   try {
     const url = new URL(request.url);
     const kind = url.searchParams.get("kind");
-    if (kind === "debug") return await debug();
+    if (kind === "debug") return await debug(url.searchParams.get("eid"));
     if (kind === "detail") {
       const eid = url.searchParams.get("eid");
       if (!eid) return json({ error: "no-eid" }, 400);
