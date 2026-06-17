@@ -22,6 +22,7 @@ export interface EspnFeed {
   kickoffs: Record<string, string>;
   progress: Record<string, string>;
   eventIds: Record<string, string>; // matchId → ESPN event id (para el detalle)
+  flips: Record<string, boolean>; // matchId → ESPN tiene el local/visita invertido
 }
 
 export const EMPTY_ESPN: EspnFeed = {
@@ -30,6 +31,7 @@ export const EMPTY_ESPN: EspnFeed = {
   kickoffs: {},
   progress: {},
   eventIds: {},
+  flips: {},
 };
 
 export async function fetchEspn(
@@ -47,7 +49,7 @@ export async function fetchEspn(
     if (!data || data.error) return EMPTY_ESPN;
 
     const mapName = makeNameMapper(groups);
-    const feed: EspnFeed = { live: {}, finals: {}, kickoffs: {}, progress: {}, eventIds: {} };
+    const feed: EspnFeed = { live: {}, finals: {}, kickoffs: {}, progress: {}, eventIds: {}, flips: {} };
 
     for (const ev of data.matches || []) {
       const h = mapName(ev.home);
@@ -62,7 +64,10 @@ export async function fetchEspn(
       }
       if (!m) continue;
 
-      if (ev.eid) feed.eventIds[m.id] = ev.eid;
+      if (ev.eid) {
+        feed.eventIds[m.id] = ev.eid;
+        feed.flips[m.id] = flipped;
+      }
       if (ev.date) feed.kickoffs[m.id] = ev.date; // hora real (ISO con zona)
 
       const hs = ev.hs;
@@ -87,11 +92,15 @@ export async function fetchEspn(
 }
 
 // Detalle de un partido (timeline + stats) desde ESPN. null si no hay datos.
-export async function espnDetail(eid: string): Promise<MatchDetail | null> {
+// flip = nuestro fixture tiene el local/visita invertido respecto de ESPN.
+export async function espnDetail(eid: string, flip = false): Promise<MatchDetail | null> {
   const ctrl = typeof AbortController !== "undefined" ? new AbortController() : null;
   const timer = setTimeout(() => ctrl?.abort(), 7000);
   try {
-    const res = await fetch(`/api/espn?kind=detail&eid=${eid}`, ctrl ? { signal: ctrl.signal } : undefined);
+    const res = await fetch(
+      `/api/espn?kind=detail&eid=${eid}${flip ? "&flip=1" : ""}`,
+      ctrl ? { signal: ctrl.signal } : undefined,
+    );
     clearTimeout(timer);
     if (!res.ok) return null;
     const data = (await res.json()) as (MatchDetail & { error?: string }) | null;

@@ -139,9 +139,10 @@ export default function App() {
         eventId: eventIds[m.id],
         afFid: afFids[m.id],
         espnEid: espn.eventIds[m.id],
+        espnFlip: espn.flips[m.id],
         progress: progress[m.id],
       })),
-    [eff, liveMap, eventIds, progress, afFids, espn.eventIds],
+    [eff, liveMap, eventIds, progress, afFids, espn.eventIds, espn.flips],
   );
   const liveCount = liveItems.length;
   const counts = useMemo(() => statusCounts(MATCHES, eff, liveMap), [eff, liveMap]);
@@ -360,6 +361,7 @@ export default function App() {
         eventId={editMatch ? eventIds[editMatch.id] ?? null : null}
         afFid={editMatch ? afFids[editMatch.id] ?? null : null}
         espnEid={editMatch ? espn.eventIds[editMatch.id] ?? null : null}
+        espnFlip={editMatch ? !!espn.flips[editMatch.id] : false}
         ko={editMatch ? kickoffs[editMatch.id] ?? "" : ""}
         live={editMatch ? isLive(editMatch, eff, liveMap) : false}
         onSave={onSave}

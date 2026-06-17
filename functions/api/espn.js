@@ -41,12 +41,12 @@ function toNum(v) {
   return Number.isNaN(n) ? null : n;
 }
 
-// Porcentaje normalizado a 0–100 (ESPN a veces da 0–1, a veces 0–100).
-function toPct(v) {
-  if (v == null || v === "") return null;
-  const n = parseFloat(String(v).replace(/[^\d.-]/g, ""));
-  if (Number.isNaN(n)) return null;
-  return Math.round((n <= 1 ? n * 100 : n) * 10) / 10;
+// Probabilidad implícita (0–1) de una cuota americana (moneyLine).
+function impliedProb(ml) {
+  if (ml == null || ml === "") return null;
+  const n = Number(ml);
+  if (Number.isNaN(n) || n === 0) return null;
+  return n > 0 ? 100 / (n + 100) : -n / (-n + 100);
 }
 
 // ----------------------------- SCOREBOARD -----------------------------
@@ -126,7 +126,7 @@ function statsByName(teamBlock) {
   return map;
 }
 
-async function detail(eid) {
+async function detail(eid, flip) {
   const data = await espn(`${ROOT}/summary?event=${eid}`, 12);
 
   // local/visita por id de equipo (en el header sabemos homeAway).
@@ -187,25 +187,24 @@ async function detail(eid) {
     referee: refO?.displayName || "",
   };
 
-  // PROBABILIDAD: predictor (pre-partido) o winprobability (en vivo)
+  // PROBABILIDAD: probabilidad implícita de las cuotas (moneyLine) del primer
+  // proveedor (odds/pickcenter). ESPN no da win-probability directa en esta liga.
   let winprob = null;
-  const wp = data?.winprobability;
-  if (Array.isArray(wp) && wp.length) {
-    const last = wp[wp.length - 1];
-    const h = toPct(last.homeWinPercentage);
-    const d = toPct(last.tiePercentage);
-    if (h != null) {
-      const draw = d ?? 0;
-      winprob = { home: h, draw, away: Math.max(0, Math.round((100 - h - draw) * 10) / 10), live: true };
-    }
-  }
-  if (!winprob && data?.predictor) {
-    const pr = data.predictor;
-    const h = toPct(pr.homeTeam?.gameProjection);
-    const a = toPct(pr.awayTeam?.gameProjection);
-    const d = toPct(pr.homeTeam?.tieProjection ?? pr.tieProjection);
-    if (h != null && a != null) {
-      winprob = { home: h, draw: d ?? Math.max(0, Math.round((100 - h - a) * 10) / 10), away: a, live: false };
+  const book = (Array.isArray(data?.odds) && data.odds[0]) ||
+    (Array.isArray(data?.pickcenter) && data.pickcenter[0]) || null;
+  if (book) {
+    const ph = impliedProb(book.homeTeamOdds?.moneyLine);
+    const pa = impliedProb(book.awayTeamOdds?.moneyLine);
+    const pd = impliedProb(book.drawOdds?.moneyLine);
+    if (ph != null && pa != null) {
+      const d = pd ?? 0;
+      const sum = ph + pa + d || 1; // saca el margen del bookie
+      winprob = {
+        home: Math.round((ph / sum) * 1000) / 10,
+        draw: Math.round((d / sum) * 1000) / 10,
+        away: Math.round((pa / sum) * 1000) / 10,
+        live: false,
+      };
     }
   }
 
@@ -231,40 +230,24 @@ async function detail(eid) {
     lineups = { home: lineupOf(homeR), away: lineupOf(awayR) };
   }
 
-  return json({ events, stats, hs, as, info, winprob, lineups }, 200, 12);
-}
-
-// ------------------------- DEBUG (temporal) ---------------------------
-// Muestra la estructura real del summary de un partido en vivo (o el primero
-// disponible) para mapear bien alineaciones, sede y árbitro.
-async function debug(eidParam) {
-  let ev;
-  if (eidParam) {
-    ev = { id: eidParam };
-  } else {
-    // varios días, para encontrar un partido jugado (con alineaciones).
-    const now = new Date();
-    const days = [
-      ymd(new Date(now.getTime() - 864e5)),
-      ymd(now),
-    ];
-    const sbs = await Promise.all(days.map((d) => espn(`${ROOT}/scoreboard?dates=${d}`).catch(() => null)));
-    const evs = [];
-    for (const sb of sbs) for (const e of sb?.events || []) evs.push(e);
-    ev =
-      evs.find((e) => e.status?.type?.state === "in") ||
-      evs.find((e) => e.status?.type?.state === "post") ||
-      evs[0];
+  // Si nuestro fixture tiene el local/visita invertido respecto de ESPN,
+  // damos vuelta TODO para que coincida con la orientación de la app.
+  let out = { events, stats, hs, as, info, winprob, lineups };
+  if (flip) {
+    out = {
+      hs: as,
+      as: hs,
+      info,
+      events: events.map((e) => ({ ...e, home: !e.home })),
+      stats: stats.map((s) => ({ ...s, home: s.away, away: s.home, hv: s.av, av: s.hv })),
+      winprob: winprob
+        ? { home: winprob.away, draw: winprob.draw, away: winprob.home, live: winprob.live }
+        : null,
+      lineups: lineups ? { home: lineups.away, away: lineups.home } : null,
+    };
   }
-  if (!ev) return json({ error: "no-event" });
-  const data = await espn(`${ROOT}/summary?event=${ev.id}`, 5);
-  const r0 = Array.isArray(data.rosters) ? data.rosters[0] : null;
-  return json({
-    eid: ev.id,
-    rosters0_full: r0,
-    pickcenter0: Array.isArray(data.pickcenter) ? data.pickcenter[0] : data.pickcenter,
-    odds0: Array.isArray(data.odds) ? data.odds[0] : data.odds,
-  });
+
+  return json(out, 200, 12);
 }
 
 // ------------------------------- ROUTER -------------------------------
@@ -273,11 +256,10 @@ export async function onRequestGet({ request }) {
   try {
     const url = new URL(request.url);
     const kind = url.searchParams.get("kind");
-    if (kind === "debug") return await debug(url.searchParams.get("eid"));
     if (kind === "detail") {
       const eid = url.searchParams.get("eid");
       if (!eid) return json({ error: "no-eid" }, 400);
-      return await detail(eid);
+      return await detail(eid, url.searchParams.get("flip") === "1");
     }
     return await scoreboard();
   } catch (e) {

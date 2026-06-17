@@ -21,6 +21,7 @@ export function Editor({
   eventId,
   afFid,
   espnEid,
+  espnFlip,
   ko,
   live,
   onSave,
@@ -33,6 +34,7 @@ export function Editor({
   eventId: string | null;
   afFid: number | null;
   espnEid: string | null;
+  espnFlip: boolean;
   ko: string;
   live: boolean;
   onSave: (id: string, score: Score) => void;
@@ -197,6 +199,7 @@ export function Editor({
           eventId={eventId}
           afFid={afFid}
           espnEid={espnEid}
+          espnFlip={espnFlip}
           home={match?.h}
           away={match?.a}
           live={live}

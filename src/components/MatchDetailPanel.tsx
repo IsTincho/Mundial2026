@@ -58,6 +58,7 @@ export function MatchDetailPanel({
   eventId,
   afFid,
   espnEid,
+  espnFlip,
   home,
   away,
   live,
@@ -65,6 +66,7 @@ export function MatchDetailPanel({
   eventId: string | null;
   afFid: number | null;
   espnEid: string | null;
+  espnFlip: boolean;
   home?: string;
   away?: string;
   live: boolean;
@@ -77,7 +79,7 @@ export function MatchDetailPanel({
     setLoading(true);
     setDetail(null);
     const tick = () =>
-      fetchBestDetail(afFid, eventId, espnEid).then((d) => {
+      fetchBestDetail(afFid, eventId, espnEid, espnFlip).then((d) => {
         if (!alive) return;
         setDetail(d);
         setLoading(false);
@@ -88,7 +90,7 @@ export function MatchDetailPanel({
       alive = false;
       if (id) clearInterval(id);
     };
-  }, [eventId, afFid, espnEid, live]);
+  }, [eventId, afFid, espnEid, espnFlip, live]);
 
   if (loading) {
     return <div className="detail loading">Cargando detalle…</div>;

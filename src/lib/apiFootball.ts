@@ -109,9 +109,10 @@ export async function fetchBestDetail(
   afFid?: number | null,
   eventId?: string | null,
   espnEid?: string | null,
+  espnFlip?: boolean,
 ): Promise<MatchDetail | null> {
   if (espnEid) {
-    const d = await espnDetail(espnEid);
+    const d = await espnDetail(espnEid, espnFlip);
     if (d) return d;
   }
   if (afFid) {
