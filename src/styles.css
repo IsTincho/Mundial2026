@@ -190,12 +190,15 @@ h1 .yr {
 /* ============================ MATCH CARDS ============================ */
 .tickets { display: grid; gap: 13px; }
 .card {
-  background: linear-gradient(180deg, var(--surface) 0%, #101015 100%);
+  background: linear-gradient(180deg, var(--surface-2) 0%, #0f1014 100%);
   border: 1px solid var(--line); border-radius: var(--r); padding: 15px 16px 16px;
   position: relative; overflow: hidden; cursor: pointer; width: 100%; text-align: left;
-  display: block; transition: border-color .18s ease, transform .12s ease;
+  display: block; transition: border-color .18s ease, transform .12s ease, box-shadow .18s ease;
 }
-.card:hover { border-color: var(--line-2); transform: translateY(-2px); }
+.card:hover { border-color: var(--line-2); transform: translateY(-2px); box-shadow: var(--sh-md); }
+/* Escudos más grandes en las tarjetas */
+.team .flag { font-size: 28px; }
+.team .flag-fallback { width: 38px; height: 28px; font-size: 11px; }
 .card:active { transform: translateY(0) scale(.997); }
 
 .crow { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 13px; }
@@ -310,17 +313,22 @@ section { margin-bottom: 26px; }
 .bracket-scroll { overflow-x: auto; padding-bottom: 12px; scrollbar-width: thin; }
 .bracket { display: flex; gap: 14px; min-width: max-content; align-items: stretch; }
 .bcol { display: flex; flex-direction: column; min-width: 170px; }
-.bcol > .rname { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 10px; text-align: center; }
+.bcol > .rname { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--gold); margin-bottom: 10px; text-align: center; }
 .bties { display: flex; flex-direction: column; justify-content: space-around; flex: 1; gap: 8px; }
-.btie { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; box-shadow: var(--hi), var(--sh-sm); }
+.btie { background: linear-gradient(180deg, var(--surface-2), var(--surface)); border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; box-shadow: var(--hi), var(--sh-sm); }
 .bteam { display: grid; grid-template-columns: 16px auto 1fr auto; align-items: center; gap: 7px; padding: 7px 9px; }
 .bteam + .bteam { border-top: 1px solid var(--line); }
 .bteam .sd { font-family: var(--mono); font-size: 9px; color: var(--dim); text-align: center; }
 .bteam .nm { font-weight: 700; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bteam .gp { font-family: var(--mono); font-size: 8.5px; color: var(--dim); }
-.bteam.adv .nm { color: var(--accent); }
-.bteam.adv .sd { color: var(--accent); }
+.bteam.adv { background: linear-gradient(90deg, color-mix(in srgb, var(--gold) 12%, transparent), transparent); }
+.bteam.adv .nm { color: var(--gold); }
+.bteam.adv .sd { color: var(--gold); }
 .bteam.tbd .nm { color: var(--dim); font-weight: 500; }
+/* La Final: corona dorada del "camino al título" */
+.bcol:last-child { min-width: 180px; }
+.bcol:last-child > .rname { font-size: 11px; background: var(--gold-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.bcol:last-child .btie { border-color: color-mix(in srgb, var(--gold) 45%, var(--line-2)); box-shadow: var(--hi), 0 0 0 1px color-mix(in srgb, var(--gold) 20%, transparent), 0 10px 26px color-mix(in srgb, var(--gold) 12%, transparent); }
 
 .thirds { margin-top: 10px; }
 
@@ -356,8 +364,16 @@ dialog#editor::-webkit-scrollbar { width: 8px; }
 dialog#editor::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 4px; }
 dialog#editor::backdrop { background: rgba(5, 6, 8, .74); backdrop-filter: blur(3px); }
 #ed-form { padding: 20px; }
-#ed-title { font-family: var(--display); margin: 0 0 3px; font-size: 22px; text-transform: uppercase; letter-spacing: .01em; line-height: 1; }
-.ed-sub { margin: 0 0 16px; color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: .04em; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Ficha de partido (estilo FIFA): escudos + nombres + VS */
+.ed-head { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; padding: 6px 0 12px; }
+.ed-ht { display: flex; flex-direction: column; align-items: center; gap: 9px; min-width: 0; text-align: center; }
+.ed-ht .flag { font-size: 38px; }
+.ed-ht .flag-fallback { width: 50px; height: 38px; font-size: 14px; }
+.ed-ht .nm { font-family: var(--display); font-size: clamp(15px, 5vw, 20px); text-transform: uppercase; line-height: 1; letter-spacing: .01em; width: 100%; }
+.ed-vs { font-family: var(--display); font-size: 18px; color: var(--gold); letter-spacing: .04em; align-self: center; filter: drop-shadow(0 1px 6px color-mix(in srgb, var(--gold) 35%, transparent)); }
+.ed-sub { margin: 0 0 16px; color: var(--muted); font-family: var(--mono); font-size: 11px; letter-spacing: .04em; text-align: center; }
 .ed-grid { display: grid; grid-template-columns: 1fr auto 1fr; align-items: end; gap: 10px; margin-bottom: 6px; }
 .ed-team { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .ed-team > span { font-family: var(--display); font-size: 14px; text-transform: uppercase; text-align: center; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -588,8 +604,9 @@ dialog#editor::backdrop { background: rgba(5, 6, 8, .74); backdrop-filter: blur(
 /* ============================================================================
    BANDERAS + tono Mundial (figuritas)
    ============================================================================ */
-.flag { border-radius: 3px; box-shadow: 0 0 0 1px rgba(0, 0, 0, .45), 0 1px 2px rgba(0, 0, 0, .4); flex: 0 0 auto; }
+.flag { border-radius: 4px; box-shadow: 0 0 0 1px rgba(255, 255, 255, .14), 0 0 0 2px rgba(0, 0, 0, .55), 0 3px 7px rgba(0, 0, 0, .45); flex: 0 0 auto; position: relative; }
 .flag.fi { background-size: cover; background-position: center; }
+.flag.fi::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(160deg, rgba(255, 255, 255, .22), transparent 42%); pointer-events: none; }
 .flag-sm { font-size: 12px; }
 .flag-md { font-size: 15px; }
 .flag-lg { font-size: 18px; }

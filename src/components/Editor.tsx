@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Match, Results, Score } from "../types";
 import { effResult, fmtDate, localDateTime } from "../lib/logic";
 import { MatchDetailPanel } from "./MatchDetailPanel";
+import { Flag } from "./Flag";
 
 function parseScore(hs: string, as: string): Score | null {
   const h = hs.trim();
@@ -118,9 +119,20 @@ export function Editor({
       }}
     >
       <form id="ed-form" onSubmit={submit}>
-        <h2 id="ed-title">
+        <h2 id="ed-title" className="sr-only">
           {match.h} vs {match.a}
         </h2>
+        <div className="ed-head">
+          <div className="ed-ht">
+            <Flag team={match.h} size="lg" />
+            <span className="nm">{match.h}</span>
+          </div>
+          <span className="ed-vs">VS</span>
+          <div className="ed-ht">
+            <Flag team={match.a} size="lg" />
+            <span className="nm">{match.a}</span>
+          </div>
+        </div>
         <p className="ed-sub">
           Grupo {match.g} · Fecha {match.f} · {ko ? localDateTime(ko) : fmtDate(match.d)}
         </p>
