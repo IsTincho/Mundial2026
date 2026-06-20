@@ -459,6 +459,15 @@ dialog#editor::backdrop { background: rgba(5, 6, 8, .74); backdrop-filter: blur(
 /* Probabilidad: números grandes estilo marcador */
 .wp-src { font-family: var(--mono); font-size: 9px; letter-spacing: .08em; color: var(--dim); border: 1px solid var(--line-2); border-radius: var(--r-pill); padding: 2px 8px; text-transform: uppercase; }
 .wp-src.live { color: var(--live); border-color: color-mix(in srgb, var(--live) 45%, transparent); }
+
+/* Filas comparativas modelo vs mercado */
+.wp-row { display: grid; grid-template-columns: 58px 1fr auto; align-items: center; gap: 9px; margin-bottom: 9px; }
+.wp-rl { font-family: var(--mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.wp-rv { display: flex; gap: 8px; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 11px; }
+.wp-rv b { font-weight: 800; }
+.wp-rv .pl { color: var(--accent); }
+.wp-rv .pm { color: var(--muted); }
+.wp-rv .pr { color: var(--gold); }
 .wp-big { display: flex; justify-content: space-between; align-items: baseline; margin: 2px 2px 10px; font-family: var(--display); }
 .wp-big span { font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
 .wp-big small { font-size: 13px; opacity: .55; font-family: var(--mono); }

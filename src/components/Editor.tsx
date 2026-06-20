@@ -3,6 +3,7 @@ import type { Match, Results, Score } from "../types";
 import { effResult, fmtDate, localDateTime } from "../lib/logic";
 import { MatchDetailPanel } from "./MatchDetailPanel";
 import { Flag } from "./Flag";
+import type { Prediction } from "../lib/model";
 
 function parseScore(hs: string, as: string): Score | null {
   const h = hs.trim();
@@ -23,6 +24,7 @@ export function Editor({
   afFid,
   espnEid,
   espnFlip,
+  pred,
   ko,
   live,
   onSave,
@@ -36,6 +38,7 @@ export function Editor({
   afFid: number | null;
   espnEid: string | null;
   espnFlip: boolean;
+  pred: Prediction | null;
   ko: string;
   live: boolean;
   onSave: (id: string, score: Score) => void;
@@ -214,6 +217,7 @@ export function Editor({
           espnFlip={espnFlip}
           home={match?.h}
           away={match?.a}
+          pred={pred}
           live={live}
         />
       )}

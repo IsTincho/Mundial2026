@@ -25,7 +25,7 @@ import {
   statusCounts,
 } from "./lib/filters";
 import { syncResults } from "./lib/sync";
-import { buildRatings } from "./lib/model";
+import { buildRatings, predict } from "./lib/model";
 import { useResults } from "./hooks/useResults";
 import { useLive } from "./hooks/useLive";
 import { useEventIds } from "./hooks/useEventIds";
@@ -383,6 +383,7 @@ export default function App() {
         afFid={editMatch ? afFids[editMatch.id] ?? null : null}
         espnEid={editMatch ? espn.eventIds[editMatch.id] ?? null : null}
         espnFlip={editMatch ? !!espn.flips[editMatch.id] : false}
+        pred={editMatch ? predict(editMatch, ratings) : null}
         ko={editMatch ? kickoffs[editMatch.id] ?? "" : ""}
         live={editMatch ? isLive(editMatch, eff, liveMap) : false}
         onSave={onSave}

@@ -1,8 +1,27 @@
 import { useEffect, useState } from "react";
 import type { Lineup, MatchDetail, TimelineEvent } from "../lib/matchDetail";
+import type { Prediction } from "../lib/model";
 import { fetchBestDetail } from "../lib/apiFootball";
 
 const POLL_MS = 30_000;
+
+function ProbRow({ label, h, d, a }: { label: string; h: number; d: number; a: number }) {
+  return (
+    <div className="wp-row">
+      <span className="wp-rl">{label}</span>
+      <span className="wp-bar" aria-hidden="true">
+        <span className="ph" style={{ width: h + "%" }} />
+        <span className="pd" style={{ width: d + "%" }} />
+        <span className="pa" style={{ width: a + "%" }} />
+      </span>
+      <span className="wp-rv">
+        <b className="pl">{Math.round(h)}</b>
+        <b className="pm">{Math.round(d)}</b>
+        <b className="pr">{Math.round(a)}</b>
+      </span>
+    </div>
+  );
+}
 
 function eventTag(type: string): { cls: string; label: string } {
   const t = type.toLowerCase();
@@ -61,6 +80,7 @@ export function MatchDetailPanel({
   espnFlip,
   home,
   away,
+  pred,
   live,
 }: {
   eventId: string | null;
@@ -69,6 +89,7 @@ export function MatchDetailPanel({
   espnFlip: boolean;
   home?: string;
   away?: string;
+  pred?: Prediction | null;
   live: boolean;
 }) {
   const [detail, setDetail] = useState<MatchDetail | null>(null);
@@ -104,24 +125,28 @@ export function MatchDetailPanel({
 
   return (
     <div className="detail">
-      {wp && (
+      {(wp || pred) && (
         <div className="wp dsec">
           <div className="detail-h">
             Probabilidad
-            <span className={"wp-src" + (wp.live ? " live" : "")}>
-              {wp.live ? "en vivo" : "según cuotas"}
-            </span>
+            <span className="wp-src">modelo vs mercado</span>
           </div>
-          <div className="wp-big">
-            <span className="pl">{Math.round(wp.home)}<small>%</small></span>
-            <span className="pm">{Math.round(wp.draw)}<small>%</small></span>
-            <span className="pr">{Math.round(wp.away)}<small>%</small></span>
-          </div>
-          <div className="wp-bar" aria-hidden="true">
-            <span className="ph" style={{ width: wp.home + "%" }} />
-            <span className="pd" style={{ width: wp.draw + "%" }} />
-            <span className="pa" style={{ width: wp.away + "%" }} />
-          </div>
+          {pred && (
+            <ProbRow
+              label="Modelo"
+              h={pred.pHome * 100}
+              d={pred.pDraw * 100}
+              a={pred.pAway * 100}
+            />
+          )}
+          {wp && (
+            <ProbRow
+              label={wp.live ? "En vivo" : "Mercado"}
+              h={wp.home}
+              d={wp.draw}
+              a={wp.away}
+            />
+          )}
           <div className="wp-labs">
             <span className="pl">{home}</span>
             <span className="pm">Empate</span>
