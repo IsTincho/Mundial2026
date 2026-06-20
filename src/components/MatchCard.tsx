@@ -1,7 +1,7 @@
 import type { LiveMap, Match, Results } from "../types";
 import { teamMeta } from "../data";
 import { effResult, fmtDate, isLive, localDate, localTime, verdict } from "../lib/logic";
-import { predict, pct } from "../lib/model";
+import { predict, pct, type Ratings } from "../lib/model";
 import { VerdictTag } from "./Score";
 import { Flag, VsCrest } from "./Flag";
 
@@ -10,12 +10,14 @@ export function MatchCard({
   results,
   liveMap,
   ko,
+  ratings,
   onOpen,
 }: {
   m: Match;
   results: Results;
   liveMap: LiveMap;
   ko?: string;
+  ratings: Ratings;
   onOpen: (id: string) => void;
 }) {
   const when = ko ? `${localDate(ko)} · ${localTime(ko)}` : fmtDate(m.d);
@@ -23,11 +25,15 @@ export function MatchCard({
   const live = isLive(m, results, liveMap);
   const liveScore = live ? liveMap[m.id] : null;
   const vd = verdict(m, results, liveMap);
-  const conf = typeof m.c === "number" ? m.c : 0;
+  const decided = !!r || live;
+  const pr = predict(m, ratings);
+  // Pendiente → predicción re-analizada por el modelo (forma actual).
+  // Jugado/en vivo → la predicción original (coherente con el veredicto).
+  const predScore = decided ? m.p : pr.score;
+  const conf = decided ? (typeof m.c === "number" ? m.c : 0) : pr.conf;
   const confPct = Math.max(0, Math.min(100, conf * 10));
   const lowConf = conf < 6;
   const serial = String(m.n).padStart(3, "0");
-  const pr = predict(m);
   const ph = pct(pr.pHome);
   const pd = pct(pr.pDraw);
   const pa = pct(pr.pAway);
@@ -71,7 +77,7 @@ export function MatchCard({
             <div className="scell pred">
               <div className="lab">Prode</div>
               <div className="num flip">
-                {m.p[0]}:{m.p[1]}
+                {predScore[0]}:{predScore[1]}
               </div>
             </div>
             {live ? (

@@ -25,6 +25,7 @@ import {
   statusCounts,
 } from "./lib/filters";
 import { syncResults } from "./lib/sync";
+import { buildRatings } from "./lib/model";
 import { useResults } from "./hooks/useResults";
 import { useLive } from "./hooks/useLive";
 import { useEventIds } from "./hooks/useEventIds";
@@ -146,6 +147,10 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [espn.finals]);
 
+  // Ratings del modelo (forma real + ranking). Se recalculan al cambiar los
+  // resultados → re-análisis automático de los partidos que faltan.
+  const ratings = useMemo(() => buildRatings(MATCHES, eff), [eff]);
+
   const stats = useMemo(() => tracker(MATCHES, eff), [eff]);
   const liveItems = useMemo<LiveItem[]>(
     () =>
@@ -242,7 +247,7 @@ export default function App() {
     ) : (
       <div className="tickets">
         {list.map((m) => (
-          <MatchCard key={m.id} m={m} results={eff} liveMap={liveMap} ko={kickoffs[m.id]} onOpen={setEditId} />
+          <MatchCard key={m.id} m={m} results={eff} liveMap={liveMap} ko={kickoffs[m.id]} ratings={ratings} onOpen={setEditId} />
         ))}
       </div>
     );
