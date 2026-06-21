@@ -14,6 +14,15 @@ interface EspnMatch {
   state?: string; // pre | in | post
   clock?: string;
   date?: string | null;
+  mh?: number | null; // mercado: % local
+  md?: number | null; // % empate
+  ma?: number | null; // % visita
+}
+
+export interface Market {
+  h: number;
+  d: number;
+  a: number;
 }
 
 export interface EspnFeed {
@@ -23,6 +32,7 @@ export interface EspnFeed {
   progress: Record<string, string>;
   eventIds: Record<string, string>; // matchId → ESPN event id (para el detalle)
   flips: Record<string, boolean>; // matchId → ESPN tiene el local/visita invertido
+  markets: Record<string, Market>; // matchId → probabilidad 1X2 del mercado (cuotas)
 }
 
 export const EMPTY_ESPN: EspnFeed = {
@@ -32,6 +42,7 @@ export const EMPTY_ESPN: EspnFeed = {
   progress: {},
   eventIds: {},
   flips: {},
+  markets: {},
 };
 
 export async function fetchEspn(
@@ -49,7 +60,7 @@ export async function fetchEspn(
     if (!data || data.error) return EMPTY_ESPN;
 
     const mapName = makeNameMapper(groups);
-    const feed: EspnFeed = { live: {}, finals: {}, kickoffs: {}, progress: {}, eventIds: {}, flips: {} };
+    const feed: EspnFeed = { live: {}, finals: {}, kickoffs: {}, progress: {}, eventIds: {}, flips: {}, markets: {} };
 
     for (const ev of data.matches || []) {
       const h = mapName(ev.home);
@@ -67,6 +78,12 @@ export async function fetchEspn(
       if (ev.eid) {
         feed.eventIds[m.id] = ev.eid;
         feed.flips[m.id] = flipped;
+      }
+      if (ev.mh != null && ev.ma != null) {
+        const md = ev.md ?? 0;
+        feed.markets[m.id] = flipped
+          ? { h: ev.ma, d: md, a: ev.mh }
+          : { h: ev.mh, d: md, a: ev.ma };
       }
       if (ev.date) feed.kickoffs[m.id] = ev.date; // hora real (ISO con zona)
 

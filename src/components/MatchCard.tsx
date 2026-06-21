@@ -1,7 +1,8 @@
 import type { LiveMap, Match, Results } from "../types";
 import { teamMeta } from "../data";
 import { effResult, fmtDate, isLive, localDate, localTime, verdict } from "../lib/logic";
-import { predict, pct, type Ratings } from "../lib/model";
+import { predict, blend, pct, type Ratings } from "../lib/model";
+import type { Market } from "../lib/espn";
 import { VerdictTag } from "./Score";
 import { Flag, VsCrest } from "./Flag";
 
@@ -11,6 +12,7 @@ export function MatchCard({
   liveMap,
   ko,
   ratings,
+  market,
   onOpen,
 }: {
   m: Match;
@@ -18,6 +20,7 @@ export function MatchCard({
   liveMap: LiveMap;
   ko?: string;
   ratings: Ratings;
+  market?: Market;
   onOpen: (id: string) => void;
 }) {
   const when = ko ? `${localDate(ko)} · ${localTime(ko)}` : fmtDate(m.d);
@@ -26,7 +29,8 @@ export function MatchCard({
   const liveScore = live ? liveMap[m.id] : null;
   const vd = verdict(m, results, liveMap);
   const decided = !!r || live;
-  const pr = predict(m, ratings);
+  // Predicción = modelo mezclado con el mercado (cuotas mandan cuando hay).
+  const pr = blend(predict(m, ratings), market);
   // Pendiente → predicción re-analizada por el modelo (forma actual).
   // Jugado/en vivo → la predicción original (coherente con el veredicto).
   const predScore = decided ? m.p : pr.score;

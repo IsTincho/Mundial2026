@@ -76,6 +76,7 @@ function parseScoreboard(data, out) {
     const away = cs.find((c) => c.homeAway === "away") || cs[1];
     if (!home || !away) continue;
     const state = ev.status?.type?.state || comp.status?.type?.state || "pre";
+    const mk = oddsToProbs(comp.odds?.[0] || ev.odds?.[0]);
     out.push({
       eid: ev.id,
       home: home.team?.displayName || home.team?.name || home.team?.shortDisplayName,
@@ -85,6 +86,9 @@ function parseScoreboard(data, out) {
       state,
       clock: comp.status?.displayClock || ev.status?.displayClock || "",
       date: ev.date || null,
+      mh: mk?.h ?? null,
+      md: mk?.d ?? null,
+      ma: mk?.a ?? null,
     });
   }
 }
@@ -203,24 +207,10 @@ async function detail(eid, flip) {
 
   // PROBABILIDAD: probabilidad implícita de las cuotas (moneyLine) del primer
   // proveedor (odds/pickcenter). ESPN no da win-probability directa en esta liga.
-  let winprob = null;
   const book = (Array.isArray(data?.odds) && data.odds[0]) ||
     (Array.isArray(data?.pickcenter) && data.pickcenter[0]) || null;
-  if (book) {
-    const ph = impliedProb(book.homeTeamOdds?.moneyLine);
-    const pa = impliedProb(book.awayTeamOdds?.moneyLine);
-    const pd = impliedProb(book.drawOdds?.moneyLine);
-    if (ph != null && pa != null) {
-      const d = pd ?? 0;
-      const sum = ph + pa + d || 1; // saca el margen del bookie
-      winprob = {
-        home: Math.round((ph / sum) * 1000) / 10,
-        draw: Math.round((d / sum) * 1000) / 10,
-        away: Math.round((pa / sum) * 1000) / 10,
-        live: false,
-      };
-    }
-  }
+  const mk = oddsToProbs(book);
+  const winprob = mk ? { home: mk.h, draw: mk.d, away: mk.a, live: false } : null;
 
   // ALINEACIONES
   const rosters = data?.rosters || [];

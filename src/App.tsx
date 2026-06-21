@@ -255,7 +255,7 @@ export default function App() {
     ) : (
       <div className="tickets">
         {list.map((m) => (
-          <MatchCard key={m.id} m={m} results={eff} liveMap={liveMap} ko={kickoffs[m.id]} ratings={ratings} onOpen={setEditId} />
+          <MatchCard key={m.id} m={m} results={eff} liveMap={liveMap} ko={kickoffs[m.id]} ratings={ratings} market={espn.markets[m.id]} onOpen={setEditId} />
         ))}
       </div>
     );

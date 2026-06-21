@@ -482,6 +482,10 @@ dialog#editor::backdrop { background: rgba(5, 6, 8, .74); backdrop-filter: blur(
 .wp-rv .pl { color: var(--accent); }
 .wp-rv .pm { color: var(--muted); }
 .wp-rv .pr { color: var(--gold); }
+.wp-xg { margin-top: 4px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); text-align: center; }
+.wp-edge { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: var(--text); background: color-mix(in srgb, var(--accent) 10%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); border-radius: var(--r-sm); padding: 8px 10px; }
+.wp-edge .z { font-family: var(--body); font-weight: 800; font-size: 9px; letter-spacing: .08em; color: var(--accent-ink); background: var(--accent); padding: 2px 7px; border-radius: var(--r-pill); flex: 0 0 auto; }
+.wp-edge b { color: var(--accent); }
 .wp-big { display: flex; justify-content: space-between; align-items: baseline; margin: 2px 2px 10px; font-family: var(--display); }
 .wp-big span { font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
 .wp-big small { font-size: 13px; opacity: .55; font-family: var(--mono); }

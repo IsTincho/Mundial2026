@@ -123,6 +123,17 @@ export function MatchDetailPanel({
   const wp = detail.winprob;
   const info = detail.info;
 
+  // "Valor": dónde el modelo da bastante más probabilidad que el mercado.
+  let edge: { label: string; d: number } | null = null;
+  if (pred && wp) {
+    const cand = [
+      { label: home || "el local", d: pred.pHome * 100 - wp.home },
+      { label: "el empate", d: pred.pDraw * 100 - wp.draw },
+      { label: away || "la visita", d: pred.pAway * 100 - wp.away },
+    ].sort((a, b) => b.d - a.d)[0];
+    if (cand.d >= 8) edge = { label: cand.label, d: Math.round(cand.d) };
+  }
+
   return (
     <div className="detail">
       {(wp || pred) && (
@@ -152,6 +163,16 @@ export function MatchDetailPanel({
             <span className="pm">Empate</span>
             <span className="pr">{away}</span>
           </div>
+          {pred && (
+            <div className="wp-xg">
+              xG modelo · {pred.xgHome.toFixed(1)} – {pred.xgAway.toFixed(1)}
+            </div>
+          )}
+          {edge && (
+            <div className="wp-edge">
+              <span className="z">VALOR</span> el modelo le da <b>+{edge.d} pts</b> a {edge.label} vs el mercado
+            </div>
+          )}
         </div>
       )}
 

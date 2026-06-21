@@ -139,6 +139,45 @@ export function pct(x: number): number {
   return Math.round(x * 100);
 }
 
+// Marcador representativo a partir de probabilidades 1X2.
+function scoreFromProbs(pH: number, pD: number, pA: number): [number, number] {
+  const top = Math.max(pH, pD, pA);
+  if (pD === top) return [1, 1];
+  const strong = top > 0.55;
+  if (pH === top) return strong ? [2, 0] : [2, 1];
+  return strong ? [0, 2] : [1, 2];
+}
+
+// Mezcla la predicción del modelo con el MERCADO (cuotas). El mercado manda
+// (más acertado); el modelo aporta cuando no hay cuotas o como matiz.
+// market viene en 0–100 (o null). w = peso del mercado.
+export function blend(
+  pred: Prediction,
+  market: { h: number; d: number; a: number } | null | undefined,
+  w = 0.72,
+): Prediction {
+  if (!market) return pred;
+  const mh = market.h / 100;
+  const md = market.d / 100;
+  const ma = market.a / 100;
+  let pHome = (1 - w) * pred.pHome + w * mh;
+  let pDraw = (1 - w) * pred.pDraw + w * md;
+  let pAway = (1 - w) * pred.pAway + w * ma;
+  const s = pHome + pDraw + pAway || 1;
+  pHome /= s;
+  pDraw /= s;
+  pAway /= s;
+  return {
+    pHome,
+    pDraw,
+    pAway,
+    xgHome: pred.xgHome,
+    xgAway: pred.xgAway,
+    score: scoreFromProbs(pHome, pDraw, pAway),
+    conf: Math.round(Math.max(pHome, pDraw, pAway) * 100) / 10,
+  };
+}
+
 // Nombre del equipo más probable según la predicción (para etiquetas).
 export const teamRanks: Record<string, number> = RANK;
 export type { Team };
