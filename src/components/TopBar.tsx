@@ -1,7 +1,7 @@
 import type { View, ViewMode } from "../types";
 
 const VIEWS: { key: View; label: string }[] = [
-  { key: "fecha", label: "Por fecha" },
+  { key: "fecha", label: "Partidos" },
   { key: "grupo", label: "Por grupo" },
   { key: "bracket", label: "Fase final" },
 ];

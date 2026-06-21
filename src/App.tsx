@@ -10,8 +10,6 @@ import type {
 } from "./types";
 import { CONFEDS, GROUPS, MATCHES, UPDATED } from "./data";
 import {
-  byDateThenGroup,
-  effResult,
   fmtDate,
   hasUser,
   isLive,
@@ -45,7 +43,6 @@ import { Editor } from "./components/Editor";
 import { LiveNow, type LiveItem } from "./components/LiveNow";
 import { useToast } from "./components/Toast";
 
-const FECHAS = [1, 2, 3] as const;
 const GRUPOS = Object.keys(GROUPS);
 
 // API-Football suspendido: el plan Free de la cuenta no da acceso a la
@@ -103,6 +100,7 @@ export default function App() {
     [finals, espn.finals, afFinals, results],
   );
   const [view, setView] = useState<View>("fecha");
+  const [timeTab, setTimeTab] = useState<"prev" | "today" | "next">("today");
   const [mode, setMode] = useState<ViewMode>("cards");
   const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [page, setPage] = useState<{ fecha: number; grupo: number }>({ fecha: 0, grupo: 0 });
@@ -181,25 +179,35 @@ export default function App() {
   const onQuery = (q: string) => patch({ query: q });
   const onClear = () => setFilters(EMPTY_FILTERS);
 
-  // Orden: lo que falta jugar arriba (en vivo → pendientes), jugados abajo.
-  const finishedRank = (m: Match) =>
-    !isLive(m, eff, liveMap) && effResult(m, eff) ? 1 : 0;
-  const upcomingFirst =
-    (cmp: (a: Match, b: Match) => number) => (a: Match, b: Match) =>
-      finishedRank(a) - finishedRank(b) || cmp(a, b);
+  // Orden cronológico real: por hora de kickoff (ESPN) cuando existe; si no,
+  // por fecha semilla; desempate por número oficial de partido. Así el orden
+  // SIEMPRE coincide con los horarios que se muestran.
+  const koMs = (m: Match) => {
+    const k = kickoffs[m.id];
+    const t = k ? Date.parse(k) : Date.parse(m.d + "T12:00:00Z");
+    return Number.isNaN(t) ? 0 : t;
+  };
+  const byKickoff = (a: Match, b: Match) => koMs(a) - koMs(b) || a.n - b.n;
+
+  // Bucket por momento relativo a HOY (zona local del usuario).
+  const todayStart = new Date().setHours(0, 0, 0, 0);
+  const timeBucket = (m: Match): "prev" | "today" | "next" => {
+    const t = koMs(m);
+    if (t < todayStart) return "prev";
+    if (t >= todayStart + 864e5) return "next";
+    return "today";
+  };
 
   // --- resultados de filtro (modo plano, sin paginación) ---
   const filtered = useMemo(
-    () => filterMatches(MATCHES, eff, filters, liveMap).slice().sort(upcomingFirst(byDateThenGroup)),
+    () => filterMatches(MATCHES, eff, filters, liveMap).slice().sort(byKickoff),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [eff, filters, liveMap],
+    [eff, filters, liveMap, kickoffs],
   );
 
   // --- páginas (sin filtros activos) ---
-  const fechaList = (f: number) =>
-    MATCHES.filter((m) => m.f === f).slice().sort(upcomingFirst(byDateThenGroup));
   const grupoList = (g: string) =>
-    MATCHES.filter((m) => m.g === g).slice().sort(upcomingFirst((a, b) => a.f - b.f || byDateThenGroup(a, b)));
+    MATCHES.filter((m) => m.g === g).slice().sort(byKickoff);
 
   const dateRange = (list: Match[]): string => {
     if (!list.length) return "";
@@ -278,19 +286,44 @@ export default function App() {
       </section>
     );
   } else if (view === "fecha") {
-    const idx = page.fecha;
-    const f = FECHAS[idx];
-    const list = fechaList(f);
-    const info: PageInfo = {
-      label: "Jornada",
-      big: "Fecha",
-      em: String(f).padStart(2, "0"),
-      meta: `${playedCount(list, eff)} de ${list.length} jugados · ${dateRange(list)}`,
-    };
+    const prev: Match[] = [];
+    const today: Match[] = [];
+    const next: Match[] = [];
+    for (const m of MATCHES) {
+      const b = timeBucket(m);
+      (b === "prev" ? prev : b === "next" ? next : today).push(m);
+    }
+    prev.sort((a, b) => byKickoff(b, a)); // anteriores: más reciente primero
+    today.sort(byKickoff);
+    next.sort(byKickoff);
+    const list = timeTab === "prev" ? prev : timeTab === "next" ? next : today;
+    const emptyMsg =
+      timeTab === "today"
+        ? "No hay partidos hoy. Mirá Próximos o Anteriores."
+        : timeTab === "next"
+          ? "No quedan próximos partidos."
+          : "Todavía no hay partidos jugados.";
     content = (
       <>
-        <Pager pages={FECHAS.length} index={idx} onIndex={(i) => setPage((p) => ({ ...p, fecha: i }))} info={info} />
-        {renderList(list)}
+        <div className="timetabs" role="tablist" aria-label="Partidos por momento">
+          <button type="button" role="tab" aria-selected={timeTab === "prev"} onClick={() => setTimeTab("prev")}>
+            Anteriores<span className="n">{prev.length}</span>
+          </button>
+          <button type="button" role="tab" aria-selected={timeTab === "today"} onClick={() => setTimeTab("today")}>
+            Hoy<span className="n">{today.length}</span>
+          </button>
+          <button type="button" role="tab" aria-selected={timeTab === "next"} onClick={() => setTimeTab("next")}>
+            Próximos<span className="n">{next.length}</span>
+          </button>
+        </div>
+        {list.length ? (
+          renderList(list)
+        ) : (
+          <div className="empty">
+            <div className="big">Sin partidos</div>
+            <p>{emptyMsg}</p>
+          </div>
+        )}
       </>
     );
   } else {

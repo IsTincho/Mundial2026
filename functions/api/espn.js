@@ -49,6 +49,22 @@ function impliedProb(ml) {
   return n > 0 ? 100 / (n + 100) : -n / (-n + 100);
 }
 
+// 1X2 normalizado (0–100, sin margen) a partir de un bloque de cuotas.
+function oddsToProbs(book) {
+  if (!book) return null;
+  const ph = impliedProb(book.homeTeamOdds?.moneyLine);
+  const pa = impliedProb(book.awayTeamOdds?.moneyLine);
+  const pd = impliedProb(book.drawOdds?.moneyLine);
+  if (ph == null || pa == null) return null;
+  const d = pd ?? 0;
+  const s = ph + pa + d || 1;
+  return {
+    h: Math.round((ph / s) * 1000) / 10,
+    d: Math.round((d / s) * 1000) / 10,
+    a: Math.round((pa / s) * 1000) / 10,
+  };
+}
+
 // ----------------------------- SCOREBOARD -----------------------------
 
 function parseScoreboard(data, out) {

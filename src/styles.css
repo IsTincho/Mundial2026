@@ -144,6 +144,20 @@ h1 .yr {
 .viewmode button[aria-pressed="true"] { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
 .viewmode svg { width: 15px; height: 15px; }
 
+/* ===================== SOLAPAS DE TIEMPO ===================== */
+.timetabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); padding: 4px; margin: 16px 0 14px; box-shadow: var(--hi); }
+.timetabs button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  font-family: var(--body); font-weight: 800; font-size: 12.5px; letter-spacing: .02em;
+  color: var(--muted); background: transparent; border: 0; cursor: pointer;
+  padding: 10px 6px; border-radius: var(--r-sm); text-transform: uppercase;
+  transition: color .15s, background .15s;
+}
+.timetabs button:hover { color: var(--text); }
+.timetabs button .n { font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--dim); background: var(--readout); border-radius: var(--r-pill); padding: 1px 7px; }
+.timetabs button[aria-selected="true"] { color: var(--ink); background: var(--gold-grad); }
+.timetabs button[aria-selected="true"] .n { color: var(--ink); background: rgba(0, 0, 0, .16); }
+
 /* ============================ FILTERS ============================ */
 .filters { padding: 16px 0 4px; }
 .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: none; }
