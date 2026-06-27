@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { BracketTie, Match, Qualifier, Results, Team } from "../types";
-import { buildBracket, qualifiers, thirdsTable } from "../lib/bracket";
+import { buildBracket, thirdsTable } from "../lib/bracket";
 import { Flag } from "./Flag";
 
 function TeamSlot({ q, adv }: { q: Qualifier | null; adv: boolean }) {
@@ -48,11 +48,10 @@ export function Bracket({
   matches: Match[];
   results: Results;
 }) {
-  const quals = useMemo(
-    () => qualifiers(groups, matches, results),
+  const rounds = useMemo(
+    () => buildBracket(groups, matches, results),
     [groups, matches, results],
   );
-  const rounds = useMemo(() => buildBracket(quals), [quals]);
   const thirds = useMemo(
     () => thirdsTable(groups, matches, results),
     [groups, matches, results],
@@ -66,10 +65,11 @@ export function Bracket({
         <span className="ss">proyección en vivo</span>
       </div>
       <p className="bracket-intro">
-        Bracket de 32 proyectado desde la <b>tabla en vivo</b>: 1º y 2º de cada grupo
-        más los <b>8 mejores terceros</b>, sembrados por campaña (Pts → DG → GF). En
-        cada cruce avanza el de mejor siembra. Es una proyección — se recalcula a
-        medida que cargás resultados, no son predicciones de marcador.
+        Cuadro oficial de la FIFA proyectado desde la <b>tabla en vivo</b>: cada
+        cruce de 16avos está fijado por posición (1º y 2º de cada grupo más los{" "}
+        <b>8 mejores terceros</b>), igual que el bracket real. Para proyectar quién
+        pasa, en cada llave avanza el de <b>mejor campaña</b> (Pts → DG → GF). Es una
+        proyección — se recalcula al cargar resultados, no son predicciones de marcador.
       </p>
 
       <div className="bracket-scroll">
