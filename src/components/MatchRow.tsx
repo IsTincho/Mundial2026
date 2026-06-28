@@ -25,7 +25,7 @@ export function MatchRow({
       type="button"
       className={"mrow v-" + vd}
       onClick={() => onOpen(m.id)}
-      aria-label={`${m.h} contra ${m.a}, grupo ${m.g}. Tocá para cargar el resultado.`}
+      aria-label={`${m.h} contra ${m.a}, ${m.round ? m.round : `grupo ${m.g}`}. Tocá para cargar el resultado.`}
     >
       <span className="names">
         <Flag team={m.h} size="sm" />
@@ -34,7 +34,7 @@ export function MatchRow({
         <span>{m.a}</span>
         <Flag team={m.a} size="sm" />
       </span>
-      <span className="gtag">{m.g}{ko ? " · " + localTime(ko) : ""}</span>
+      <span className="gtag">{m.round ? m.round : m.g}{ko ? " · " + localTime(ko) : ""}</span>
       <span className="sc">
         <span className="p">
           {m.p[0]}:{m.p[1]}

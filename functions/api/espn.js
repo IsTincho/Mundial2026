@@ -93,14 +93,27 @@ function parseScoreboard(data, out) {
   }
 }
 
+// Inicio del torneo (11 jun 2026). Barremos desde acá para que, al entrar,
+// se autocompleten TODOS los partidos ya jugados (no solo los de la última
+// semana): fase de grupos completa + fase final + próximos.
+const SEASON_START = Date.UTC(2026, 5, 11);
+
 async function scoreboard() {
   const now = new Date();
-  // Ventana amplia: de 7 días atrás a 2 adelante. Cubre fechas ya jugadas
-  // (resultados finales) + en vivo + próximos, sin depender de la semilla.
+  // Ventana = desde el inicio del torneo hasta 2 días adelante. Cubre todo lo
+  // ya definido (resultados finales) + en vivo + próximos, sin depender de la
+  // semilla. Los días pasados ya son inmutables → se cachean más tiempo.
+  const today0 = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const end = today0 + 2 * 864e5;
+  const start = Math.min(SEASON_START, end);
   const days = [];
-  for (let i = -7; i <= 2; i++) days.push(ymd(new Date(now.getTime() + i * 864e5)));
+  for (let t = start; t <= end; t += 864e5) {
+    days.push({ d: ymd(new Date(t)), past: t < today0 });
+  }
+  // Cap defensivo (no debería alcanzarse durante el torneo).
+  if (days.length > 60) days.splice(0, days.length - 60);
   const results = await Promise.all(
-    days.map((d) => espn(`${ROOT}/scoreboard?dates=${d}`).catch(() => null)),
+    days.map((x) => espn(`${ROOT}/scoreboard?dates=${x.d}`, x.past ? 600 : 15).catch(() => null)),
   );
   const matches = [];
   for (const r of results) if (r) parseScoreboard(r, matches);

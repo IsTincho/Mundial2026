@@ -47,7 +47,7 @@ export function MatchCard({
       type="button"
       className={"card v-" + vd}
       onClick={() => onOpen(m.id)}
-      aria-label={`${m.h} contra ${m.a}, grupo ${m.g}, fecha ${m.f}. Tocá para cargar el resultado.`}
+      aria-label={`${m.h} contra ${m.a}, ${m.round ? m.round : `grupo ${m.g}, fecha ${m.f}`}. Tocá para cargar el resultado.`}
     >
       <div className="crow">
         <VsCrest home={m.h} away={m.a} />
@@ -55,7 +55,7 @@ export function MatchCard({
           <span className="no">№ {serial}</span>
           <span className="dotrow" aria-hidden="true" />
           <span className="code">
-            GRP {m.g} · {when}
+            {m.round ? m.round.toUpperCase() : `GRP ${m.g}`} · {when}
           </span>
         </div>
         <span className="stampbox">

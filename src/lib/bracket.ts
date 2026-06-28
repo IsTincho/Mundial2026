@@ -197,7 +197,7 @@ export function buildBracket(
     for (const d of r.defs) {
       const a = resolve(d.a, d.n, winners);
       const b = resolve(d.b, d.n, winners);
-      ties.push({ round: r.name, a, b });
+      ties.push({ round: r.name, n: d.n, a, b });
       winners[d.n] = advance(a, b);
     }
     rounds.push({ name: r.name, ties });

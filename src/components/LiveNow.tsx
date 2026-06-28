@@ -59,7 +59,7 @@ function LiveCard({ item, onOpen }: { item: LiveItem; onOpen: (id: string) => vo
       <div className="lc-top">
         <span className="lc-tag"><span className="pd" />En vivo</span>
         <span className="lc-min">{fmtProgress(progress)}</span>
-        <span className="lc-grp">Grupo {m.g}</span>
+        <span className="lc-grp">{m.round ? m.round : `Grupo ${m.g}`}</span>
       </div>
 
       <div className="lc-main">

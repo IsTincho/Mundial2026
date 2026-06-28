@@ -6,8 +6,8 @@ export type Score = [number, number];
 export type Team = [string, number];
 
 export interface Match {
-  g: string;          // grupo A..L
-  f: 1 | 2 | 3;       // fecha / jornada
+  g: string;          // grupo A..L (o "KO" en eliminatorias)
+  f: number;          // fecha / jornada (1..3 en grupos; sin uso en eliminatorias)
   d: string;          // fecha calendario ISO (YYYY-MM-DD)
   h: string;          // local
   a: string;          // visita
@@ -16,7 +16,9 @@ export interface Match {
   r: Score | null;    // resultado semilla (real conocido) o null
   live?: boolean;     // true si está en juego (sin final)
   id: string;         // "G-F-Local-Visita" (estable)
-  n: number;          // número de partido 1..72 (para el serial del ticket)
+  n: number;          // número de partido 1..104 (para el serial del ticket)
+  round?: string;     // nombre de la ronda en eliminatorias ("16avos"…"Final")
+  proj?: boolean;     // true si los equipos son una proyección (eliminatorias)
 }
 
 export interface ProdeData {
@@ -85,7 +87,8 @@ export interface Qualifier {
 
 // Llave del bracket (un cruce).
 export interface BracketTie {
-  round: string;       // "32avos" | "Octavos" | ...
+  round: string;       // "16avos" | "Octavos" | ...
+  n: number;           // número de partido oficial (73..104)
   a: Qualifier | null;
   b: Qualifier | null;
 }

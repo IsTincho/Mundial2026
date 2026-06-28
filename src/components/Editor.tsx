@@ -137,7 +137,10 @@ export function Editor({
           </div>
         </div>
         <p className="ed-sub">
-          Grupo {match.g} · Fecha {match.f} · {ko ? localDateTime(ko) : fmtDate(match.d)}
+          {match.round
+            ? `${match.round}${match.proj ? " · proyección" : ""}`
+            : `Grupo ${match.g} · Fecha ${match.f}`}{" "}
+          · {ko ? localDateTime(ko) : fmtDate(match.d)}
         </p>
 
         <div className="ed-grid">

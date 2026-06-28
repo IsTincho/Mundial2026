@@ -18,7 +18,8 @@ Construida con **React + Vite + TypeScript**. Funciona **100% del lado del clien
   - 🔴 **En vivo**: partido en juego.
 - **Tracker de aciertos** en el header: ganadores acertados, marcadores exactos y % corriente, calculado **solo sobre los partidos con resultado**.
 - **Tabla por grupo** autocalculada (3 puntos por ganar, 1 por empatar). Desempate por **diferencia de gol → goles a favor → orden oficial del grupo**. Resalta los **dos primeros** (clasifican, en verde) y marca el **tercero** (candidato a mejor tercero, en ámbar punteado).
-- **Fase final proyectada**: bracket de 32 que se arma **desde la tabla en vivo** (1º y 2º de cada grupo + los 8 mejores terceros, sembrados por campaña). En cada cruce avanza el de mejor siembra. Es una **proyección** que se recalcula al cargar resultados — no son predicciones de marcador del knockout.
+- **Fase final proyectada**: bracket que sigue el **cuadro oficial fijo de la FIFA 2026** (cada cruce de 16avos predefinido por posición: 1º y 2º de cada grupo + los 8 mejores terceros en su slot oficial; octavos→final con las conexiones reales). Se arma **desde la tabla en vivo**; en cada llave avanza el de mejor campaña. Es una **proyección** que se recalcula al cargar resultados.
+- **Eliminatorias en el fixture**: además del bracket, los 31 partidos de fase final (16avos→final) aparecen como partidos normales en **Hoy/Próximos**, con fecha oficial, equipos proyectados desde el bracket y **pronóstico del modelo**. Los resultados se completan en vivo (capa de solo-lectura, no se persisten porque la proyección puede cambiar).
 - **Carga manual de resultados**: tocás un partido, cargás el marcador real y se guarda en tu navegador. Tabla, bracket y aciertos se recalculan **al instante**.
 
 ## Diseño

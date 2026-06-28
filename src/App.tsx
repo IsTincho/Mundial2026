@@ -24,6 +24,7 @@ import {
 } from "./lib/filters";
 import { syncResults } from "./lib/sync";
 import { buildRatings, predict } from "./lib/model";
+import { buildKnockout } from "./lib/knockout";
 import { useResults } from "./hooks/useResults";
 import { useLive } from "./hooks/useLive";
 import { useEventIds } from "./hooks/useEventIds";
@@ -53,13 +54,16 @@ const USE_API_FOOTBALL = false;
 
 export default function App() {
   const { results, setScore, clearScore, applyPatch, resetAll } = useResults();
-  const { live: sdbLive, finals, eventIds: liveEventIds, kickoffs: liveKo, progress: sdbProgress } = useLive(MATCHES, GROUPS);
+  // Fixture completo (grupos + eliminatorias proyectadas). Se completa más
+  // abajo; las fuentes en vivo lo leen por ref para cubrir también la fase final.
+  const allMatchesRef = useRef<Match[]>(MATCHES);
+  const { live: sdbLive, finals, eventIds: liveEventIds, kickoffs: liveKo, progress: sdbProgress } = useLive(allMatchesRef, GROUPS);
   const afLiveMap = useApiFootball(MATCHES, GROUPS, USE_API_FOOTBALL);
   // Finalizados de todo el torneo desde API-Football (si hay key). Se mergean
   // como los `finals` de TheSportsDB: cobertura de días pasados, no solo hoy.
   const afFinals = useAfResults(MATCHES, GROUPS, USE_API_FOOTBALL);
   // ESPN (gratis, sin key): fuente principal de EN VIVO, horarios y finalizados.
-  const espn = useEspn(MATCHES, GROUPS);
+  const espn = useEspn(allMatchesRef, GROUPS);
   // Precedencia del live: TheSportsDB < ESPN < API-Football (si hay key).
   const liveMap = useMemo(() => {
     const m = { ...sdbLive, ...espn.live };
@@ -138,6 +142,10 @@ export default function App() {
   useEffect(() => {
     const p: Results = {};
     for (const id in espn.finals) {
+      // Solo persistimos finales de GRUPOS. Los de eliminatorias quedan como
+      // capa en vivo: si la proyección cambia los equipos, no queda pegado un
+      // resultado viejo a un cruce que ahora es otro.
+      if (id.startsWith("KO-")) continue;
       if (!(id in resultsRef.current)) p[id] = espn.finals[id];
     }
     if (Object.keys(p).length) applyPatch(p);
@@ -146,13 +154,24 @@ export default function App() {
   }, [espn.finals]);
 
   // Ratings del modelo (forma real + ranking). Se recalculan al cambiar los
-  // resultados → re-análisis automático de los partidos que faltan.
+  // resultados → re-análisis automático de los partidos que faltan. Se calculan
+  // SOLO con los partidos de grupos (los de eliminatorias son proyección).
   const ratings = useMemo(() => buildRatings(MATCHES, eff), [eff]);
 
-  const stats = useMemo(() => tracker(MATCHES, eff), [eff]);
+  // Eliminatorias proyectadas desde la tabla en vivo, con pronóstico del modelo.
+  const koMatches = useMemo(
+    () => buildKnockout(GROUPS, MATCHES, eff, ratings),
+    [eff, ratings],
+  );
+  // Fixture completo: grupos + fase final. Es lo que se muestra en las vistas
+  // por fecha y lo que leen las fuentes en vivo (vía allMatchesRef).
+  const allMatches = useMemo(() => [...MATCHES, ...koMatches], [koMatches]);
+  allMatchesRef.current = allMatches;
+
+  const stats = useMemo(() => tracker(allMatches, eff), [allMatches, eff]);
   const liveItems = useMemo<LiveItem[]>(
     () =>
-      MATCHES.filter((m) => isLive(m, eff, liveMap)).map((m) => ({
+      allMatches.filter((m) => isLive(m, eff, liveMap)).map((m) => ({
         m,
         score: liveMap[m.id] ?? null,
         eventId: eventIds[m.id],
@@ -161,14 +180,14 @@ export default function App() {
         espnFlip: espn.flips[m.id],
         progress: progress[m.id],
       })),
-    [eff, liveMap, eventIds, progress, afFids, espn.eventIds, espn.flips],
+    [allMatches, eff, liveMap, eventIds, progress, afFids, espn.eventIds, espn.flips],
   );
   const liveCount = liveItems.length;
-  const counts = useMemo(() => statusCounts(MATCHES, eff, liveMap), [eff, liveMap]);
+  const counts = useMemo(() => statusCounts(allMatches, eff, liveMap), [allMatches, eff, liveMap]);
   const active = filtersActive(filters);
   const editMatch = useMemo(
-    () => MATCHES.find((m) => m.id === editId) ?? null,
-    [editId],
+    () => allMatches.find((m) => m.id === editId) ?? null,
+    [allMatches, editId],
   );
 
   // --- helpers de filtros ---
@@ -200,9 +219,9 @@ export default function App() {
 
   // --- resultados de filtro (modo plano, sin paginación) ---
   const filtered = useMemo(
-    () => filterMatches(MATCHES, eff, filters, liveMap).slice().sort(byKickoff),
+    () => filterMatches(allMatches, eff, filters, liveMap).slice().sort(byKickoff),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [eff, filters, liveMap, kickoffs],
+    [allMatches, eff, filters, liveMap, kickoffs],
   );
 
   // --- páginas (sin filtros activos) ---
@@ -289,7 +308,7 @@ export default function App() {
     const prev: Match[] = [];
     const today: Match[] = [];
     const next: Match[] = [];
-    for (const m of MATCHES) {
+    for (const m of allMatches) {
       const b = timeBucket(m);
       (b === "prev" ? prev : b === "next" ? next : today).push(m);
     }
