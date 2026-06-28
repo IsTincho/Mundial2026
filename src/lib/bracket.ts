@@ -4,10 +4,12 @@
 // grupo + 8 mejores terceros), igual que el cuadro oficial. Las rondas
 // siguientes siguen las conexiones fijas de la FIFA (ganador del partido X vs
 // ganador del partido Y). Para "proyectar" quién avanza, en cada cruce pasa el
-// equipo con mejor campaña (Pts → DG → GF → ranking). Todo se recalcula al
+// FAVORITO DEL MODELO (mismo pronóstico que muestran las tarjetas: fuerza por
+// ranking + forma real), no la mejor campaña en puntos. Todo se recalcula al
 // cargar resultados.
 import type { BracketTie, Match, Qualifier, Results, Team } from "../types";
 import { standings } from "./logic";
+import { buildRatings, predict, type Ratings } from "./model";
 
 interface Round {
   name: string;
@@ -93,11 +95,21 @@ function byRecord(a: { pts: number; dg: number; gf: number }, b: typeof a): numb
   return b.pts - a.pts || b.dg - a.dg || b.gf - a.gf;
 }
 
-// Proyección: en un cruce avanza el de mejor campaña (menor siembra global).
-function advance(a: Qualifier | null, b: Qualifier | null): Qualifier | null {
-  if (!a) return b;
-  if (!b) return a;
-  return a.seed <= b.seed ? a : b;
+// Proyección: en un cruce avanza el FAVORITO del modelo (ranking + forma),
+// el mismo pronóstico que muestran las tarjetas. En knockout no hay empate, así
+// que comparamos prob. de victoria local vs visitante. Empate del modelo → la
+// mejor campaña (siembra) desempata. Devuelve qué lado pasa: "a" | "b" | null.
+function pickAdv(
+  a: Qualifier | null,
+  b: Qualifier | null,
+  ratings: Ratings,
+): "a" | "b" | null {
+  if (!a && !b) return null;
+  if (!a) return "b";
+  if (!b) return "a";
+  const pr = predict({ h: a.name, a: b.name } as unknown as Match, ratings);
+  if (pr.pHome === pr.pAway) return a.seed <= b.seed ? "a" : "b";
+  return pr.pHome > pr.pAway ? "a" : "b";
 }
 
 // Asigna los 8 mejores terceros a los 8 slots de tercero respetando, para cada
@@ -163,8 +175,11 @@ export function buildBracket(
   const bestThirds = rankedThirds.slice(0, 8);
   const qualThirdGroups = bestThirds.map((t) => t.group);
 
-  // Siembra global 1..32 por campaña: el puesto (1º>2º>3º) y el grupo desempatan.
-  // Solo se usa para proyectar quién avanza, no para armar los cruces.
+  // Ratings del modelo (ranking + forma real) para proyectar quién avanza.
+  const ratings = buildRatings(matches, results);
+
+  // Siembra global 1..32 por campaña: solo informativa (se muestra en el slot) y
+  // sirve de desempate cuando el modelo da un cruce 50/50.
   const pool = [...Object.values(firsts), ...Object.values(seconds), ...bestThirds];
   pool.sort(
     (a, b) => byRecord(a, b) || a.pos - b.pos || (a.group < b.group ? -1 : a.group > b.group ? 1 : 0),
@@ -197,8 +212,9 @@ export function buildBracket(
     for (const d of r.defs) {
       const a = resolve(d.a, d.n, winners);
       const b = resolve(d.b, d.n, winners);
-      ties.push({ round: r.name, n: d.n, a, b });
-      winners[d.n] = advance(a, b);
+      const adv = pickAdv(a, b, ratings);
+      ties.push({ round: r.name, n: d.n, a, b, adv });
+      winners[d.n] = adv === "b" ? b : adv === "a" ? a : null;
     }
     rounds.push({ name: r.name, ties });
   }

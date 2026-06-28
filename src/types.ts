@@ -87,8 +87,9 @@ export interface Qualifier {
 
 // Llave del bracket (un cruce).
 export interface BracketTie {
-  round: string;       // "16avos" | "Octavos" | ...
-  n: number;           // número de partido oficial (73..104)
+  round: string;          // "16avos" | "Octavos" | ...
+  n: number;              // número de partido oficial (73..104)
   a: Qualifier | null;
   b: Qualifier | null;
+  adv?: "a" | "b" | null; // qué lado proyecta avanzar (favorito del modelo)
 }

@@ -29,8 +29,11 @@ function TeamSlot({ q, adv }: { q: Qualifier | null; adv: boolean }) {
 function Tie({ tie }: { tie: BracketTie }) {
   const a = tie.a;
   const b = tie.b;
-  const aAdv = !!a && (!b || a.seed <= b.seed);
-  const bAdv = !!b && (!a || b.seed < a.seed);
+  // Resaltado = el lado que el modelo proyecta que avanza (coincide con el que
+  // pasa de ronda). Fallback a la siembra por si faltara el dato.
+  const adv = tie.adv ?? (a && (!b || a.seed <= b.seed) ? "a" : b ? "b" : null);
+  const aAdv = adv === "a";
+  const bAdv = adv === "b";
   return (
     <div className="btie">
       <TeamSlot q={a} adv={aAdv} />
@@ -68,8 +71,9 @@ export function Bracket({
         Cuadro oficial de la FIFA proyectado desde la <b>tabla en vivo</b>: cada
         cruce de 16avos está fijado por posición (1º y 2º de cada grupo más los{" "}
         <b>8 mejores terceros</b>), igual que el bracket real. Para proyectar quién
-        pasa, en cada llave avanza el de <b>mejor campaña</b> (Pts → DG → GF). Es una
-        proyección — se recalcula al cargar resultados, no son predicciones de marcador.
+        pasa, en cada llave avanza el <b>favorito del modelo</b> (fuerza por ranking
+        + forma real), el mismo pronóstico de las tarjetas. Es una proyección — se
+        recalcula al cargar resultados.
       </p>
 
       <div className="bracket-scroll">
