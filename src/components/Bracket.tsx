@@ -1,43 +1,105 @@
 import { useMemo } from "react";
-import type { BracketTie, Match, Qualifier, Results, Team } from "../types";
-import { buildBracket, thirdsTable } from "../lib/bracket";
+import type { Match, Results, Team } from "../types";
+import { championRoad, thirdsTable } from "../lib/bracket";
 import { Flag } from "./Flag";
 
-function TeamSlot({ q, adv }: { q: Qualifier | null; adv: boolean }) {
-  if (!q) {
-    return (
-      <div className="bteam tbd">
-        <span className="sd">–</span>
-        <span className="nm">A definir</span>
-        <span className="gp" />
-      </div>
-    );
-  }
-  return (
-    <div className={"bteam" + (adv ? " adv" : "")}>
-      <span className="sd">{q.seed}</span>
-      <Flag team={q.name} size="sm" />
-      <span className="nm">{q.name}</span>
-      <span className="gp">
-        {q.pos}
-        {q.group}
-      </span>
-    </div>
+// El "camino al campeón" en forma radial: 32 banderas en el anillo exterior, cada
+// cruce convergiendo hacia la copa del centro. El camino del campeón proyectado
+// (la cadena de favoritos que llega a la Final) se enciende en oro.
+function ChampionRoad({
+  groups,
+  matches,
+  results,
+}: {
+  groups: Record<string, Team[]>;
+  matches: Match[];
+  results: Results;
+}) {
+  const road = useMemo(
+    () => championRoad(groups, matches, results),
+    [groups, matches, results],
   );
-}
 
-function Tie({ tie }: { tie: BracketTie }) {
-  const a = tie.a;
-  const b = tie.b;
-  // Resaltado = el lado que el modelo proyecta que avanza (coincide con el que
-  // pasa de ronda). Fallback a la siembra por si faltara el dato.
-  const adv = tie.adv ?? (a && (!b || a.seed <= b.seed) ? "a" : b ? "b" : null);
-  const aAdv = adv === "a";
-  const bAdv = adv === "b";
+  // viewBox 1000×1000 para las líneas; las banderas son HTML posicionado encima.
+  const V = 1000;
+  const pct = (v: number) => `${v * 100}%`;
+
   return (
-    <div className="btie">
-      <TeamSlot q={a} adv={aAdv} />
-      <TeamSlot q={b} adv={bAdv} />
+    <div className="champroad" role="img" aria-label="Camino al campeón">
+      <svg
+        className="cr-lines"
+        viewBox={`0 0 ${V} ${V}`}
+        preserveAspectRatio="xMidYMid meet"
+        aria-hidden="true"
+      >
+        <defs>
+          <radialGradient id="cr-core" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="rgba(255,213,120,.55)" />
+            <stop offset="35%" stopColor="rgba(255,181,74,.20)" />
+            <stop offset="100%" stopColor="rgba(255,181,74,0)" />
+          </radialGradient>
+        </defs>
+
+        {/* Halo dorado detrás de la copa */}
+        <circle cx={V / 2} cy={V / 2} r={V * 0.34} fill="url(#cr-core)" />
+
+        {/* Tramos normales primero, el camino al campeón encima */}
+        {road.links
+          .filter((l) => !l.onPath)
+          .map((l, i) => (
+            <line
+              key={"n" + i}
+              x1={l.x1 * V} y1={l.y1 * V}
+              x2={l.x2 * V} y2={l.y2 * V}
+              className="cr-link"
+            />
+          ))}
+        {road.links
+          .filter((l) => l.onPath)
+          .map((l, i) => (
+            <line
+              key={"p" + i}
+              x1={l.x1 * V} y1={l.y1 * V}
+              x2={l.x2 * V} y2={l.y2 * V}
+              className="cr-link gold"
+            />
+          ))}
+
+        {/* Nodos de cruce (puntos donde se encuentran dos equipos) */}
+        {road.nodes.map((n) => (
+          <circle
+            key={n.n}
+            cx={n.x * V} cy={n.y * V}
+            r={n.round >= 3 ? 7 : 5}
+            className={"cr-node" + (n.onPath ? " gold" : "")}
+          />
+        ))}
+      </svg>
+
+      {/* Copa al centro */}
+      <div className="cr-trophy" aria-hidden="true">
+        <span className="cup">🏆</span>
+      </div>
+
+      {/* Banderas en el anillo exterior */}
+      {road.leaves.map((l) => (
+        <div
+          key={l.n + l.side}
+          className={
+            "cr-flag" +
+            (l.onPath ? " champ" : l.adv ? " adv" : "") +
+            (l.q ? "" : " tbd")
+          }
+          style={{ left: pct(l.x), top: pct(l.y) }}
+          title={l.q ? l.q.name : "A definir"}
+        >
+          {l.q ? (
+            <Flag team={l.q.name} size="md" />
+          ) : (
+            <span className="dot" />
+          )}
+        </div>
+      ))}
     </div>
   );
 }
@@ -51,12 +113,12 @@ export function Bracket({
   matches: Match[];
   results: Results;
 }) {
-  const rounds = useMemo(
-    () => buildBracket(groups, matches, results),
-    [groups, matches, results],
-  );
   const thirds = useMemo(
     () => thirdsTable(groups, matches, results),
+    [groups, matches, results],
+  );
+  const road = useMemo(
+    () => championRoad(groups, matches, results),
     [groups, matches, results],
   );
 
@@ -64,7 +126,7 @@ export function Bracket({
     <section>
       <div className="sectionhead">
         <span className="bar3" />
-        <h2>Fase final</h2>
+        <h2>Camino al campeón</h2>
         <span className="ss">proyección en vivo</span>
       </div>
       <p className="bracket-intro">
@@ -72,24 +134,21 @@ export function Bracket({
         cruce de 16avos está fijado por posición (1º y 2º de cada grupo más los{" "}
         <b>8 mejores terceros</b>), igual que el bracket real. Para proyectar quién
         pasa, en cada llave avanza el <b>favorito del modelo</b> (fuerza por ranking
-        + forma real), el mismo pronóstico de las tarjetas. Es una proyección — se
-        recalcula al cargar resultados.
+        + forma real), el mismo pronóstico de las tarjetas. El camino dorado marca
+        al campeón proyectado — se recalcula al cargar resultados.
       </p>
 
-      <div className="bracket-scroll">
-        <div className="bracket">
-          {rounds.map((round) => (
-            <div className="bcol" key={round.name}>
-              <div className="rname">{round.name}</div>
-              <div className="bties">
-                {round.ties.map((tie, i) => (
-                  <Tie tie={tie} key={round.name + i} />
-                ))}
-              </div>
-            </div>
-          ))}
+      <ChampionRoad groups={groups} matches={matches} results={results} />
+
+      {road.champion && (
+        <div className="cr-champ-label">
+          <span className="ttl">Campeón proyectado</span>
+          <span className="who">
+            <Flag team={road.champion.name} size="md" />
+            {road.champion.name}
+          </span>
         </div>
-      </div>
+      )}
 
       <div className="sectionhead">
         <span className="bar3" />

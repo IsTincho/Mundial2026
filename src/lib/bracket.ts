@@ -221,6 +221,160 @@ export function buildBracket(
   return rounds;
 }
 
+// ───────────────────────── Camino al campeón (radial) ─────────────────────────
+// Mismo bracket proyectado, pero dispuesto en forma RADIAL: los 32 equipos en el
+// anillo exterior y cada cruce converge hacia el centro (la copa). El "camino al
+// campeón" — la cadena de cruces que gana el favorito proyectado — se resalta en
+// oro desde su bandera hasta el trofeo. Reusa buildBracket(), solo agrega geometría.
+
+const ALL_DEFS: MatchDef[] = [...R32, ...R16, ...QF, ...SF, ...FINAL];
+const DEF_BY_N = new Map(ALL_DEFS.map((d) => [d.n, d]));
+const ROUND_OF: Record<number, number> = {};
+[R32, R16, QF, SF, FINAL].forEach((defs, ri) =>
+  defs.forEach((d) => (ROUND_OF[d.n] = ri)),
+);
+
+// Radio (0..0.5, normalizado al centro) por ronda del NODO de cruce; las banderas
+// viven más afuera, en LEAF_RADIUS. Final ≈ centro, 16avos hacia el borde.
+const NODE_RADIUS = [0.305, 0.245, 0.185, 0.122, 0.062];
+const LEAF_RADIUS = 0.435;
+const START_ANGLE = -Math.PI / 2; // primer equipo arriba; gira en sentido horario
+
+export interface RoadPoint {
+  x: number; // 0..1 (0.5 = centro)
+  y: number;
+}
+export interface RoadLeaf extends RoadPoint {
+  n: number; // partido de 16avos
+  side: "a" | "b";
+  q: Qualifier | null;
+  adv: boolean; // avanza de los 16avos
+  onPath: boolean; // es el campeón proyectado
+}
+export interface RoadNode extends RoadPoint {
+  n: number;
+  round: number; // 0..4
+  onPath: boolean; // el ganador proyectado de este cruce es el campeón
+}
+export interface RoadLink {
+  x1: number; y1: number; x2: number; y2: number;
+  onPath: boolean; // tramo del camino al campeón
+  round: number; // ronda del nodo padre (0..4)
+}
+export interface ChampionRoad {
+  leaves: RoadLeaf[];
+  nodes: RoadNode[];
+  links: RoadLink[];
+  champion: Qualifier | null;
+}
+
+const polar = (angle: number, radius: number): RoadPoint => ({
+  x: 0.5 + radius * Math.cos(angle),
+  y: 0.5 + radius * Math.sin(angle),
+});
+
+export function championRoad(
+  groups: Record<string, Team[]>,
+  matches: Match[],
+  results: Results,
+): ChampionRoad {
+  const rounds = buildBracket(groups, matches, results);
+  const tieByN = new Map<number, BracketTie>();
+  for (const r of rounds) for (const t of r.ties) tieByN.set(t.n, t);
+
+  const winnerOf = (n: number): Qualifier | null => {
+    const t = tieByN.get(n);
+    if (!t) return null;
+    return t.adv === "a" ? t.a : t.adv === "b" ? t.b : null;
+  };
+  const final = tieByN.get(104);
+  const champion = final
+    ? final.adv === "a"
+      ? final.a
+      : final.adv === "b"
+        ? final.b
+        : null
+    : null;
+  const isChamp = (name?: string | null) =>
+    !!champion && !!name && name === champion.name;
+
+  const leaves: RoadLeaf[] = [];
+  const nodeByN = new Map<number, RoadNode>();
+  let leafIdx = 0;
+
+  // Recorrido en profundidad desde la Final: ubica cada equipo en el anillo
+  // exterior en orden de bracket (rivales potenciales quedan contiguos) y cada
+  // nodo de cruce en el ángulo medio de sus dos hijos.
+  const place = (n: number): number => {
+    const def = DEF_BY_N.get(n)!;
+    const tie = tieByN.get(n)!;
+    const round = ROUND_OF[n];
+
+    const child = (slot: Slot, side: "a" | "b"): number => {
+      if (slot.kind === "winner") return place(slot.match);
+      // Hoja: una bandera del anillo exterior.
+      const angle = START_ANGLE + ((leafIdx + 0.5) / 16) * Math.PI; // 32 hojas en 2π
+      leafIdx++;
+      const q = side === "a" ? tie.a : tie.b;
+      const p = polar(angle, LEAF_RADIUS);
+      leaves.push({
+        ...p,
+        n,
+        side,
+        q,
+        adv: (tie.adv ?? null) === side,
+        onPath: isChamp(q?.name),
+      });
+      return angle;
+    };
+
+    const aAngle = child(def.a, "a");
+    const bAngle = child(def.b, "b");
+    const angle = (aAngle + bAngle) / 2;
+    const p = polar(angle, NODE_RADIUS[round]);
+    nodeByN.set(n, {
+      ...p,
+      n,
+      round,
+      onPath: isChamp(winnerOf(n)?.name),
+    });
+    return angle;
+  };
+  place(104);
+
+  // Tramos: cada nodo se une a sus dos hijos (nodo o bandera) y la Final al centro.
+  const links: RoadLink[] = [];
+  for (const def of ALL_DEFS) {
+    const node = nodeByN.get(def.n)!;
+    const linkTo = (slot: Slot, side: "a" | "b") => {
+      let target: RoadPoint;
+      let onPath: boolean;
+      if (slot.kind === "winner") {
+        target = nodeByN.get(slot.match)!;
+        onPath = isChamp(winnerOf(slot.match)?.name);
+      } else {
+        const leaf = leaves.find((l) => l.n === def.n && l.side === side)!;
+        target = leaf;
+        onPath = leaf.onPath;
+      }
+      links.push({
+        x1: node.x, y1: node.y, x2: target.x, y2: target.y,
+        onPath, round: ROUND_OF[def.n],
+      });
+    };
+    linkTo(def.a, "a");
+    linkTo(def.b, "b");
+  }
+  // Final → copa (centro).
+  const finalNode = nodeByN.get(104)!;
+  links.push({
+    x1: finalNode.x, y1: finalNode.y, x2: 0.5, y2: 0.5,
+    onPath: !!champion, round: 4,
+  });
+
+  return { leaves, nodes: [...nodeByN.values()], links, champion };
+}
+
 export interface ThirdRow extends Omit<Qualifier, "seed"> {
   rank: number;
   qualifies: boolean;
