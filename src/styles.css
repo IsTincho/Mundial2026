@@ -340,32 +340,39 @@ section { margin-bottom: 26px; }
   overflow: hidden;
   touch-action: none;
 }
-.cr-lines { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.cr-link { stroke: var(--line-2); stroke-width: 2; fill: none; }
+.cr-lines { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+.cr-link { stroke: var(--line-2); stroke-width: 2; fill: none; transition: opacity .18s ease; }
+.cr-link.dim { opacity: .28; }
 .cr-link.gold {
   stroke: var(--gold);
-  stroke-width: 3;
-  filter: drop-shadow(0 0 4px rgba(255, 197, 78, .55));
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 5px rgba(255, 197, 78, .7));
 }
 .cr-node { fill: #4a4a44; stroke: var(--ink); stroke-width: 2; }
 .cr-node.gold {
   fill: var(--gold);
   stroke: var(--gold-deep);
-  filter: drop-shadow(0 0 5px rgba(255, 197, 78, .7));
+  filter: drop-shadow(0 0 5px rgba(255, 197, 78, .8));
 }
 
-/* Banderas circulares en el anillo exterior */
+/* Banderas circulares (anillo exterior + ganadores que avanzan hacia adentro).
+   Son botones: tocarlas ilumina el camino del equipo hacia la copa. */
 .cr-flag {
   position: absolute;
   transform: translate(-50%, -50%);
   width: clamp(26px, 7.6vw, 40px);
   height: clamp(26px, 7.6vw, 40px);
+  border: 0;
+  padding: 0;
   border-radius: 50%;
   display: grid;
   place-items: center;
   background: var(--surface-2);
   box-shadow: 0 0 0 1.5px var(--line-2), 0 2px 7px rgba(0, 0, 0, .55);
   z-index: 2;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity .18s ease, box-shadow .18s ease, transform .12s ease;
 }
 .cr-flag .flag {
   width: 100%; height: 100%;
@@ -376,19 +383,36 @@ section { margin-bottom: 26px; }
 .cr-flag .flag::after { border-radius: 50%; }
 .cr-flag .flag-fallback { width: 100%; height: 100%; border-radius: 50%; font-size: 9px; }
 .cr-flag .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--line-2); }
-.cr-flag.tbd { width: clamp(14px, 4vw, 20px); height: clamp(14px, 4vw, 20px); background: var(--surface); box-shadow: 0 0 0 1px var(--line); }
-.cr-flag.adv { box-shadow: 0 0 0 2px rgba(255, 255, 255, .42), 0 2px 8px rgba(0, 0, 0, .55); }
-.cr-flag.champ {
-  box-shadow: 0 0 0 2.5px var(--gold), 0 0 14px rgba(255, 197, 78, .6), 0 2px 9px rgba(0, 0, 0, .6);
+.cr-flag.tbd { width: clamp(13px, 3.6vw, 18px); height: clamp(13px, 3.6vw, 18px); background: var(--surface); box-shadow: 0 0 0 1px var(--line); cursor: default; z-index: 1; }
+.cr-flag.adv { box-shadow: 0 0 0 2px rgba(255, 255, 255, .4), 0 2px 8px rgba(0, 0, 0, .55); }
+
+/* Ganadores reales: banderas más chicas que marchan hacia el centro. */
+.cr-flag.cr-win {
+  width: clamp(20px, 5.6vw, 30px);
+  height: clamp(20px, 5.6vw, 30px);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .5), 0 2px 7px rgba(0, 0, 0, .6);
   z-index: 3;
 }
 
-/* Copa al centro */
+/* Equipo seleccionado: aro dorado encendido. */
+.cr-flag.sel {
+  box-shadow: 0 0 0 2.5px var(--gold), 0 0 14px rgba(255, 197, 78, .7), 0 2px 9px rgba(0, 0, 0, .6);
+  z-index: 6;
+  transform: translate(-50%, -50%) scale(1.12);
+}
+@media (hover: hover) {
+  .cr-flag:not(.tbd):hover { transform: translate(-50%, -50%) scale(1.1); }
+  .cr-flag.sel:hover { transform: translate(-50%, -50%) scale(1.12); }
+}
+/* Con algo elegido, lo no relacionado se atenúa para destacar el camino. */
+.champroad.has-sel .cr-flag:not(.sel) { opacity: .42; }
+
+/* Copa / campeón al centro */
 .cr-trophy {
   position: absolute;
   left: 50%; top: 50%;
   transform: translate(-50%, -50%);
-  z-index: 4;
+  z-index: 5;
   display: grid;
   place-items: center;
   width: clamp(54px, 16vw, 84px);
@@ -400,6 +424,34 @@ section { margin-bottom: 26px; }
   font-size: clamp(30px, 9vw, 46px);
   line-height: 1;
   filter: drop-shadow(0 0 10px rgba(255, 197, 78, .75)) drop-shadow(0 3px 5px rgba(0, 0, 0, .6));
+}
+/* Campeón definido: bandera con copa-corona, sobre la copa central. */
+.cr-champ {
+  position: relative;
+  border: 0;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+  width: clamp(40px, 12vw, 60px);
+  height: clamp(40px, 12vw, 60px);
+  border-radius: 50%;
+  -webkit-tap-highlight-color: transparent;
+}
+.cr-champ .flag {
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2.5px var(--gold), 0 0 18px rgba(255, 197, 78, .7);
+}
+.cr-champ .flag::after { border-radius: 50%; }
+.cr-champ.sel .flag { box-shadow: 0 0 0 3px var(--gold), 0 0 24px rgba(255, 197, 78, .9); }
+.cr-champ .crown {
+  position: absolute;
+  top: -42%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: clamp(20px, 6vw, 30px);
+  line-height: 1;
+  filter: drop-shadow(0 0 8px rgba(255, 197, 78, .85)) drop-shadow(0 2px 3px rgba(0, 0, 0, .6));
 }
 
 /* Etiqueta del campeón proyectado */

@@ -141,11 +141,34 @@ function assignThirds(
   return out;
 }
 
+// Cómo se decide quién avanza en cada cruce:
+//  - "model": favorito del modelo (proyección; lo usa el fixture de eliminatorias).
+//  - "result": SOLO avanza el que ganó de verdad (resultado real cargado). Si el
+//    partido no se jugó/empató, el slot queda vacío. Es lo que usa el camino al
+//    campeón: los países avanzan conforme ganan, no por pronóstico.
+export type AdvanceMode = "model" | "result";
+
+// Ganador real de un cruce de eliminatorias por su resultado cargado (id "KO-n").
+function pickAdvResult(
+  n: number,
+  a: Qualifier | null,
+  b: Qualifier | null,
+  results: Results,
+): "a" | "b" | null {
+  if (!a || !b) return null;
+  const sc = results["KO-" + n];
+  if (!sc) return null;
+  if (sc[0] > sc[1]) return "a";
+  if (sc[1] > sc[0]) return "b";
+  return null; // empate (penales): sin dato, queda indefinido
+}
+
 // Construye el cuadro completo desde la tabla en vivo.
 export function buildBracket(
   groups: Record<string, Team[]>,
   matches: Match[],
   results: Results,
+  advance: AdvanceMode = "model",
 ): Round[] {
   const firsts: Record<string, Qualifier> = {};
   const seconds: Record<string, Qualifier> = {};
@@ -212,7 +235,10 @@ export function buildBracket(
     for (const d of r.defs) {
       const a = resolve(d.a, d.n, winners);
       const b = resolve(d.b, d.n, winners);
-      const adv = pickAdv(a, b, ratings);
+      const adv =
+        advance === "result"
+          ? pickAdvResult(d.n, a, b, results)
+          : pickAdv(a, b, ratings);
       ties.push({ round: r.name, n: d.n, a, b, adv });
       winners[d.n] = adv === "b" ? b : adv === "a" ? a : null;
     }
@@ -222,10 +248,13 @@ export function buildBracket(
 }
 
 // ───────────────────────── Camino al campeón (radial) ─────────────────────────
-// Mismo bracket proyectado, pero dispuesto en forma RADIAL: los 32 equipos en el
-// anillo exterior y cada cruce converge hacia el centro (la copa). El "camino al
-// campeón" — la cadena de cruces que gana el favorito proyectado — se resalta en
-// oro desde su bandera hasta el trofeo. Reusa buildBracket(), solo agrega geometría.
+// El bracket dispuesto en forma RADIAL (póster): los 32 equipos en el anillo
+// exterior y cada cruce converge hacia el centro (la copa). Es ESTÉTICO, no una
+// predicción: los países avanzan hacia adentro SOLO conforme ganan de verdad
+// (resultados reales, advance="result"), y el ganador de cada cruce aparece en su
+// nodo. El resaltado dorado es interactivo: lo aplica el componente al equipo que
+// clickeás, iluminando su camino hacia la copa. Acá solo se arma la geometría y,
+// para ese resaltado, la cadena de partidos (entrada → Final) de cada equipo.
 
 const ALL_DEFS: MatchDef[] = [...R32, ...R16, ...QF, ...SF, ...FINAL];
 const DEF_BY_N = new Map(ALL_DEFS.map((d) => [d.n, d]));
@@ -233,10 +262,26 @@ const ROUND_OF: Record<number, number> = {};
 [R32, R16, QF, SF, FINAL].forEach((defs, ri) =>
   defs.forEach((d) => (ROUND_OF[d.n] = ri)),
 );
+// Padre de cada cruce (el partido al que va su ganador). 104 (Final) no tiene.
+const PARENT_OF: Record<number, number> = {};
+for (const def of ALL_DEFS) {
+  if (def.a.kind === "winner") PARENT_OF[def.a.match] = def.n;
+  if (def.b.kind === "winner") PARENT_OF[def.b.match] = def.n;
+}
+// Cadena de partidos desde un cruce hasta la Final (inclusive): el "camino" físico.
+function chainOf(n: number): number[] {
+  const out: number[] = [];
+  let cur: number | undefined = n;
+  while (cur !== undefined) {
+    out.push(cur);
+    cur = PARENT_OF[cur];
+  }
+  return out;
+}
 
 // Radio (0..0.5, normalizado al centro) por ronda del NODO de cruce; las banderas
-// viven más afuera, en LEAF_RADIUS. Final ≈ centro, 16avos hacia el borde.
-const NODE_RADIUS = [0.305, 0.245, 0.185, 0.122, 0.062];
+// del anillo exterior viven en LEAF_RADIUS. Final ≈ centro, 16avos hacia el borde.
+const NODE_RADIUS = [0.31, 0.25, 0.19, 0.135, 0.07];
 const LEAF_RADIUS = 0.435;
 const START_ANGLE = -Math.PI / 2; // primer equipo arriba; gira en sentido horario
 
@@ -245,20 +290,24 @@ export interface RoadPoint {
   y: number;
 }
 export interface RoadLeaf extends RoadPoint {
-  n: number; // partido de 16avos
+  key: string; // identificador estable `${n}${side}`
+  n: number; // partido de 16avos donde entra
   side: "a" | "b";
   q: Qualifier | null;
-  adv: boolean; // avanza de los 16avos
-  onPath: boolean; // es el campeón proyectado
+  advanced: boolean; // ganó su cruce de 16avos (resultado real)
+  chain: number[]; // partidos desde su entrada hasta la Final
 }
 export interface RoadNode extends RoadPoint {
   n: number;
   round: number; // 0..4
-  onPath: boolean; // el ganador proyectado de este cruce es el campeón
+  winner: Qualifier | null; // ganador REAL del cruce (o null si no se definió)
 }
 export interface RoadLink {
   x1: number; y1: number; x2: number; y2: number;
-  onPath: boolean; // tramo del camino al campeón
+  parentN: number; // cruce del nodo padre
+  childN?: number; // hijo = otro cruce
+  childKey?: string; // hijo = una bandera (hoja)
+  toCenter?: boolean; // tramo Final → copa
   round: number; // ronda del nodo padre (0..4)
 }
 export interface ChampionRoad {
@@ -278,7 +327,8 @@ export function championRoad(
   matches: Match[],
   results: Results,
 ): ChampionRoad {
-  const rounds = buildBracket(groups, matches, results);
+  // Avance por RESULTADOS REALES: un equipo solo pasa de ronda si ganó.
+  const rounds = buildBracket(groups, matches, results, "result");
   const tieByN = new Map<number, BracketTie>();
   for (const r of rounds) for (const t of r.ties) tieByN.set(t.n, t);
 
@@ -287,16 +337,7 @@ export function championRoad(
     if (!t) return null;
     return t.adv === "a" ? t.a : t.adv === "b" ? t.b : null;
   };
-  const final = tieByN.get(104);
-  const champion = final
-    ? final.adv === "a"
-      ? final.a
-      : final.adv === "b"
-        ? final.b
-        : null
-    : null;
-  const isChamp = (name?: string | null) =>
-    !!champion && !!name && name === champion.name;
+  const champion = winnerOf(104);
 
   const leaves: RoadLeaf[] = [];
   const nodeByN = new Map<number, RoadNode>();
@@ -319,11 +360,12 @@ export function championRoad(
       const p = polar(angle, LEAF_RADIUS);
       leaves.push({
         ...p,
+        key: `${n}${side}`,
         n,
         side,
         q,
-        adv: (tie.adv ?? null) === side,
-        onPath: isChamp(q?.name),
+        advanced: (tie.adv ?? null) === side,
+        chain: chainOf(n),
       });
       return angle;
     };
@@ -332,12 +374,7 @@ export function championRoad(
     const bAngle = child(def.b, "b");
     const angle = (aAngle + bAngle) / 2;
     const p = polar(angle, NODE_RADIUS[round]);
-    nodeByN.set(n, {
-      ...p,
-      n,
-      round,
-      onPath: isChamp(winnerOf(n)?.name),
-    });
+    nodeByN.set(n, { ...p, n, round, winner: winnerOf(n) });
     return angle;
   };
   place(104);
@@ -347,20 +384,19 @@ export function championRoad(
   for (const def of ALL_DEFS) {
     const node = nodeByN.get(def.n)!;
     const linkTo = (slot: Slot, side: "a" | "b") => {
-      let target: RoadPoint;
-      let onPath: boolean;
       if (slot.kind === "winner") {
-        target = nodeByN.get(slot.match)!;
-        onPath = isChamp(winnerOf(slot.match)?.name);
+        const target = nodeByN.get(slot.match)!;
+        links.push({
+          x1: node.x, y1: node.y, x2: target.x, y2: target.y,
+          parentN: def.n, childN: slot.match, round: ROUND_OF[def.n],
+        });
       } else {
         const leaf = leaves.find((l) => l.n === def.n && l.side === side)!;
-        target = leaf;
-        onPath = leaf.onPath;
+        links.push({
+          x1: node.x, y1: node.y, x2: leaf.x, y2: leaf.y,
+          parentN: def.n, childKey: leaf.key, round: ROUND_OF[def.n],
+        });
       }
-      links.push({
-        x1: node.x, y1: node.y, x2: target.x, y2: target.y,
-        onPath, round: ROUND_OF[def.n],
-      });
     };
     linkTo(def.a, "a");
     linkTo(def.b, "b");
@@ -369,7 +405,7 @@ export function championRoad(
   const finalNode = nodeByN.get(104)!;
   links.push({
     x1: finalNode.x, y1: finalNode.y, x2: 0.5, y2: 0.5,
-    onPath: !!champion, round: 4,
+    parentN: 104, toCenter: true, round: 4,
   });
 
   return { leaves, nodes: [...nodeByN.values()], links, champion };
