@@ -10,6 +10,7 @@
 import type { BracketTie, Match, Qualifier, Results, Team } from "../types";
 import { standings } from "./logic";
 import { buildRatings, predict, type Ratings } from "./model";
+import { THIRD_ALLOCATION, THIRD_WINNER_ORDER } from "./thirdAllocation";
 
 interface Round {
   name: string;
@@ -83,6 +84,22 @@ const SF: MatchDef[] = [
 ];
 const FINAL: MatchDef[] = [{ n: 104, a: win(101), b: win(102) }];
 
+// Ganador de grupo -> nº de partido de 16avos donde recibe a un tercero.
+// Se deriva del cuadro oficial (R32): cada slot de tercero está emparejado con
+// el 1º de un grupo concreto (1A→79, 1B→85, 1D→81, 1E→74, 1G→82, 1I→77,
+// 1K→87, 1L→80).
+const WINNER_MATCH: Record<string, number> = {};
+for (const d of R32) {
+  const hasThird = d.a.kind === "third" || d.b.kind === "third";
+  const first =
+    d.a.kind === "pos" && d.a.pos === 1
+      ? d.a.group
+      : d.b.kind === "pos" && d.b.pos === 1
+        ? d.b.group
+        : null;
+  if (hasThird && first) WINNER_MATCH[first] = d.n;
+}
+
 const ROUNDS: { name: string; defs: MatchDef[] }[] = [
   { name: ROUND_NAMES[0], defs: R32 },
   { name: ROUND_NAMES[1], defs: R16 },
@@ -141,6 +158,32 @@ function assignThirds(
   return out;
 }
 
+// Asignación OFICIAL de los 8 mejores terceros a sus cruces de 16avos usando la
+// tabla fija de la FIFA (Annexe C): para el conjunto concreto de 8 grupos que
+// clasifican, cada ganador enfrenta al tercero que el reglamento define, NO un
+// emparejamiento válido cualquiera. Esto reproduce el cuadro real (p. ej. con
+// terceros de {B,D,E,F,I,J,K,L}, el 1ºE juega contra el 3º del grupo D). Si la
+// combinación no estuviera en la tabla, cae al backtracking como red de
+// seguridad. Devuelve { nº de partido -> grupo del tercero }.
+function assignThirdsOfficial(qualifyingGroups: string[]): Record<number, string> {
+  const key = [...qualifyingGroups].sort().join("");
+  const row = THIRD_ALLOCATION[key];
+  if (!row || row.length !== THIRD_WINNER_ORDER.length) {
+    const slots: { match: number; from: string[] }[] = [];
+    for (const d of R32) {
+      if (d.a.kind === "third") slots.push({ match: d.n, from: d.a.from });
+      if (d.b.kind === "third") slots.push({ match: d.n, from: d.b.from });
+    }
+    return assignThirds(slots, qualifyingGroups);
+  }
+  const out: Record<number, string> = {};
+  THIRD_WINNER_ORDER.forEach((winnerGroup, i) => {
+    const matchN = WINNER_MATCH[winnerGroup];
+    if (matchN != null) out[matchN] = row[i];
+  });
+  return out;
+}
+
 // Construye el cuadro completo desde la tabla en vivo.
 export function buildBracket(
   groups: Record<string, Team[]>,
@@ -188,13 +231,8 @@ export function buildBracket(
     q.seed = i + 1;
   });
 
-  // Reparte los terceros clasificados a sus slots oficiales.
-  const thirdSlots: { match: number; from: string[] }[] = [];
-  for (const d of R32) {
-    if (d.a.kind === "third") thirdSlots.push({ match: d.n, from: d.a.from });
-    if (d.b.kind === "third") thirdSlots.push({ match: d.n, from: d.b.from });
-  }
-  const thirdAssign = assignThirds(thirdSlots, qualThirdGroups);
+  // Reparte los terceros clasificados a sus slots con la tabla oficial FIFA.
+  const thirdAssign = assignThirdsOfficial(qualThirdGroups);
 
   const resolve = (slot: Slot, matchN: number, winners: Record<number, Qualifier | null>): Qualifier | null => {
     if (slot.kind === "pos") return (slot.pos === 1 ? firsts : seconds)[slot.group] ?? null;
