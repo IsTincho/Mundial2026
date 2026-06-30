@@ -33,6 +33,28 @@ function sign(a: number, b: number): number {
   return a > b ? 1 : a < b ? -1 : 0;
 }
 
+// Clave de la tanda de penales de un partido (eliminatorias). El valor es un
+// Score ([1,0] ganó local, [0,1] ganó visita) guardado junto al resto de cargas.
+export function penKey(id: string): string {
+  return "pen:" + id;
+}
+
+// ¿Es un cruce de eliminatorias? (lo arma buildKnockout con g="KO").
+export function isKnockout(m: Match): boolean {
+  return m.g === "KO";
+}
+
+// Ganador por penales de un cruce KO empatado en los 90'/120': "h" | "a" | null.
+// Solo aplica cuando hay resultado igualado; en cualquier otro caso, null.
+export function penWinner(m: Match, results: Results): "h" | "a" | null {
+  if (!isKnockout(m)) return null;
+  const r = effResult(m, results);
+  if (!r || r[0] !== r[1]) return null;
+  const pen = results[penKey(m.id)];
+  if (!pen) return null;
+  return pen[0] > pen[1] ? "h" : pen[1] > pen[0] ? "a" : null;
+}
+
 export function verdict(m: Match, results: Results, live?: LiveMap): Verdict {
   if (isLive(m, results, live)) return "live";
   const r = effResult(m, results);

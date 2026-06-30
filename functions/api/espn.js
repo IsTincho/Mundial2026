@@ -83,6 +83,9 @@ function parseScoreboard(data, out) {
       away: away.team?.displayName || away.team?.name || away.team?.shortDisplayName,
       hs: toNum(home.score),
       as: toNum(away.score),
+      // Penales (eliminatorias empatadas): goles de la tanda, si los hay.
+      shh: toNum(home.shootoutScore),
+      sha: toNum(away.shootoutScore),
       state,
       clock: comp.status?.displayClock || ev.status?.displayClock || "",
       date: ev.date || null,

@@ -13,6 +13,7 @@ import {
   fmtDate,
   hasUser,
   isLive,
+  penKey,
   playedCount,
   tracker,
 } from "./lib/logic";
@@ -142,10 +143,11 @@ export default function App() {
   useEffect(() => {
     const p: Results = {};
     for (const id in espn.finals) {
-      // Solo persistimos finales de GRUPOS. Los de eliminatorias quedan como
-      // capa en vivo: si la proyección cambia los equipos, no queda pegado un
-      // resultado viejo a un cruce que ahora es otro.
-      if (id.startsWith("KO-")) continue;
+      // Solo persistimos finales de GRUPOS. Los de eliminatorias (KO-… y su
+      // tanda de penales pen:KO-…) quedan como capa en vivo: si la proyección
+      // cambia los equipos, no queda pegado un resultado viejo a un cruce que
+      // ahora es otro.
+      if (id.startsWith("KO-") || id.startsWith("pen:KO-")) continue;
       if (!(id in resultsRef.current)) p[id] = espn.finals[id];
     }
     if (Object.keys(p).length) applyPatch(p);
@@ -236,13 +238,23 @@ export default function App() {
     return a === b ? a : `${a}–${b}`;
   };
 
-  const onSave = (id: string, score: [number, number]) => {
+  const onSave = (
+    id: string,
+    score: [number, number],
+    pen?: "h" | "a" | null,
+  ) => {
     setScore(id, score);
+    // Definición por penales: se guarda aparte (pen:<id>) como [1,0]/[0,1].
+    const pk = penKey(id);
+    if (pen === "h") setScore(pk, [1, 0]);
+    else if (pen === "a") setScore(pk, [0, 1]);
+    else clearScore(pk);
     setEditId(null);
     toast("Resultado guardado");
   };
   const onClearScore = (id: string) => {
     clearScore(id);
+    clearScore(penKey(id)); // borrar también la tanda de penales, si había
     setEditId(null);
     toast("Volvé al dato base");
   };

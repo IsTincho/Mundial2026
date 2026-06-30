@@ -1,5 +1,5 @@
 import type { LiveMap, Match, Results } from "../types";
-import { effResult, isLive, localTime, verdict } from "../lib/logic";
+import { effResult, isLive, localTime, penWinner, verdict } from "../lib/logic";
 import { Flag } from "./Flag";
 
 export function MatchRow({
@@ -19,6 +19,7 @@ export function MatchRow({
   const live = isLive(m, results, liveMap);
   const liveScore = live ? liveMap[m.id] : null;
   const vd = verdict(m, results, liveMap);
+  const pw = penWinner(m, results);
 
   return (
     <button
@@ -49,6 +50,7 @@ export function MatchRow({
             {r ? `${r[0]}:${r[1]}` : "–:–"}
           </span>
         )}
+        {pw && <span className="penmark" title="Definición por penales">pen.</span>}
       </span>
       <span className="vdot" aria-hidden="true" />
     </button>

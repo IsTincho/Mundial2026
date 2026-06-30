@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { Match, Results, Score } from "../types";
-import { effResult, fmtDate, localDateTime } from "../lib/logic";
+import { effResult, fmtDate, isKnockout, localDateTime, penKey } from "../lib/logic";
 import { MatchDetailPanel } from "./MatchDetailPanel";
 import { Flag } from "./Flag";
 import type { Prediction } from "../lib/model";
@@ -41,7 +41,7 @@ export function Editor({
   pred: Prediction | null;
   ko: string;
   live: boolean;
-  onSave: (id: string, score: Score) => void;
+  onSave: (id: string, score: Score, pen?: "h" | "a" | null) => void;
   onClear: (id: string) => void;
   onClose: () => void;
 }) {
@@ -49,6 +49,7 @@ export function Editor({
   const homeRef = useRef<HTMLInputElement>(null);
   const [home, setHome] = useState("");
   const [away, setAway] = useState("");
+  const [pen, setPen] = useState<"h" | "a" | null>(null);
   const [hint, setHint] = useState("");
 
   // Abrir/cerrar el <dialog> nativo según haya partido seleccionado.
@@ -59,6 +60,8 @@ export function Editor({
       const r = effResult(match, results);
       setHome(r ? String(r[0]) : "");
       setAway(r ? String(r[1]) : "");
+      const pk = results[penKey(match.id)];
+      setPen(pk ? (pk[0] > pk[1] ? "h" : pk[1] > pk[0] ? "a" : null) : null);
       setHint("");
       if (typeof dlg.showModal === "function" && !dlg.open) dlg.showModal();
       else dlg.setAttribute("open", "");
@@ -91,6 +94,10 @@ export function Editor({
         ? "Restaurar dato del modelo"
         : "Sin dato cargado";
 
+  // En eliminatorias un empate se define por penales: pedimos el ganador.
+  const scNow = parseScore(home, away);
+  const isKoDraw = isKnockout(match) && !!scNow && scNow[0] === scNow[1];
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const sc = parseScore(home, away);
@@ -98,7 +105,12 @@ export function Editor({
       setHint("Ingresá dos números válidos (0 o más) para guardar.");
       return;
     }
-    onSave(match.id, sc);
+    const draw = isKnockout(match) && sc[0] === sc[1];
+    if (draw && !pen) {
+      setHint("Empate: elegí quién ganó por penales para definir el cruce.");
+      return;
+    }
+    onSave(match.id, sc, draw ? pen : null);
   };
 
   const onReset = () => {
@@ -181,6 +193,38 @@ export function Editor({
             />
           </label>
         </div>
+
+        {isKoDraw && (
+          <div className="ed-pen">
+            <span className="ed-pen-q">Empate — ganó por penales:</span>
+            <div className="ed-pen-opts" role="group" aria-label="Ganador por penales">
+              <button
+                type="button"
+                className={"ed-pen-btn" + (pen === "h" ? " on" : "")}
+                aria-pressed={pen === "h"}
+                onClick={() => {
+                  setPen("h");
+                  setHint("");
+                }}
+              >
+                <Flag team={match.h} size="sm" />
+                {match.h}
+              </button>
+              <button
+                type="button"
+                className={"ed-pen-btn" + (pen === "a" ? " on" : "")}
+                aria-pressed={pen === "a"}
+                onClick={() => {
+                  setPen("a");
+                  setHint("");
+                }}
+              >
+                <Flag team={match.a} size="sm" />
+                {match.a}
+              </button>
+            </div>
+          </div>
+        )}
 
         <p className="ed-pred">
           Tu pronóstico:{" "}

@@ -1,6 +1,6 @@
 import type { LiveMap, Match, Results } from "../types";
 import { teamMeta } from "../data";
-import { effResult, fmtDate, isLive, localDate, localTime, verdict } from "../lib/logic";
+import { effResult, fmtDate, isLive, localDate, localTime, penWinner, verdict } from "../lib/logic";
 import { predict, blend, pct, type Ratings } from "../lib/model";
 import type { Market } from "../lib/espn";
 import { VerdictTag } from "./Score";
@@ -29,6 +29,9 @@ export function MatchCard({
   const liveScore = live ? liveMap[m.id] : null;
   const vd = verdict(m, results, liveMap);
   const decided = !!r || live;
+  // Definición por penales (eliminatorias empatadas): quién avanzó.
+  const pw = penWinner(m, results);
+  const penTeam = pw === "h" ? m.h : pw === "a" ? m.a : null;
   // Predicción = modelo mezclado con el mercado (cuotas mandan cuando hay).
   const pr = blend(predict(m, ratings), market);
   // Pendiente → predicción re-analizada por el modelo (forma actual).
@@ -102,6 +105,11 @@ export function MatchCard({
               </div>
             )}
           </div>
+          {penTeam && (
+            <div className="penline" title={`${penTeam} ganó por penales`}>
+              Pen. · avanza <b>{penTeam}</b>
+            </div>
+          )}
         </div>
         <div className="team away">
           <div className="teamline">

@@ -166,6 +166,8 @@ function assignThirds(
 export type AdvanceMode = "model" | "result";
 
 // Ganador real de un cruce de eliminatorias por su resultado cargado (id "KO-n").
+// En knockout no puede quedar empate: si los 90'/120' terminan igualados, decide
+// la tanda de penales, guardada aparte como "pen:KO-n" ([1,0] local, [0,1] visita).
 function pickAdvResult(
   n: number,
   a: Qualifier | null,
@@ -177,7 +179,10 @@ function pickAdvResult(
   if (!sc) return null;
   if (sc[0] > sc[1]) return "a";
   if (sc[1] > sc[0]) return "b";
-  return null; // empate (penales): sin dato, queda indefinido
+  // Empate → definición por penales (si está cargada).
+  const pen = results["pen:KO-" + n];
+  if (pen) return pen[0] > pen[1] ? "a" : pen[1] > pen[0] ? "b" : null;
+  return null;
 }
 
 // Asignación OFICIAL de los 8 mejores terceros a sus cruces de 16avos usando la

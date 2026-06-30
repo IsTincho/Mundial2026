@@ -234,6 +234,8 @@ h1 .yr {
 .team .nm { font-family: var(--display); font-size: clamp(17px, 5.5vw, 22px); line-height: .95; text-transform: uppercase; letter-spacing: .01em; }
 .team .cf { font-family: var(--mono); font-size: 9px; letter-spacing: .1em; color: var(--dim); text-transform: uppercase; }
 .board { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 108px; flex: 0 0 auto; }
+.penline { font-family: var(--mono); font-size: 9px; letter-spacing: .04em; text-transform: uppercase; color: var(--gold); text-align: center; }
+.penline b { font-weight: 800; }
 .scores { display: flex; border: 1px solid var(--line); border-radius: var(--r-md); overflow: hidden; background: var(--readout); box-shadow: inset 0 2px 9px rgba(0, 0, 0, .55); }
 .scell { padding: 7px 11px; text-align: center; min-width: 52px; }
 .scell + .scell { border-left: 1px solid var(--line); }
@@ -293,6 +295,7 @@ h1 .yr {
 .mrow .sc .r { color: var(--text); }
 .mrow .sc .r.pend { color: var(--dim); }
 .mrow .sc .sep { color: var(--dim); margin: 0 4px; }
+.mrow .sc .penmark { color: var(--gold); font-size: 9px; font-weight: 700; margin-left: 5px; text-transform: uppercase; letter-spacing: .04em; }
 
 /* ============================ SECTIONS / STANDINGS ============================ */
 main { padding-top: 6px; }
@@ -536,6 +539,15 @@ dialog#editor::backdrop { background: rgba(5, 6, 8, .74); backdrop-filter: blur(
 .ed-team input:focus { border-color: var(--accent); outline: none; }
 .ed-team input::-webkit-outer-spin-button, .ed-team input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .ed-dash { color: var(--dim); font-size: 1.7rem; padding-bottom: 14px; font-family: var(--mono); }
+/* Definición por penales (eliminatorias empatadas) */
+.ed-pen { margin: 14px 0 0; padding: 11px 12px; border: 1px solid color-mix(in srgb, var(--gold) 35%, var(--line)); border-radius: var(--r-md); background: color-mix(in srgb, var(--gold) 6%, transparent); }
+.ed-pen-q { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--gold); margin-bottom: 9px; }
+.ed-pen-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ed-pen-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 9px 10px; border: 1px solid var(--line-2); border-radius: var(--r-sm); background: var(--surface-2); color: var(--muted); font-weight: 700; font-size: 12.5px; cursor: pointer; transition: border-color .15s, color .15s, background .15s; }
+.ed-pen-btn:hover { color: var(--text); }
+.ed-pen-btn.on { border-color: var(--gold); color: var(--gold); background: color-mix(in srgb, var(--gold) 14%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 30%, transparent); }
+.ed-pen-btn .flag { font-size: 15px; }
+
 .ed-pred { margin: 12px 0 0; color: var(--muted); font-size: 12.5px; }
 .ed-pred b { color: var(--accent); font-family: var(--mono); font-variant-numeric: tabular-nums; }
 .ed-hint { margin: 9px 0 0; color: var(--miss); font-size: 12px; min-height: 1.1em; }

@@ -11,6 +11,8 @@ interface EspnMatch {
   away?: string;
   hs?: number | null;
   as?: number | null;
+  shh?: number | null; // goles de penales: local
+  sha?: number | null; // goles de penales: visita
   state?: string; // pre | in | post
   clock?: string;
   date?: string | null;
@@ -98,6 +100,17 @@ export async function fetchEspn(
         if (c) feed.progress[m.id] = c;
       } else if (ev.state === "post" && score) {
         feed.finals[m.id] = score;
+        // Empate definido por penales: guardamos quién ganó la tanda como
+        // "pen:<id>" para que el bracket avance al que pasó.
+        if (
+          score[0] === score[1] &&
+          ev.shh != null &&
+          ev.sha != null &&
+          ev.shh !== ev.sha
+        ) {
+          const pen: Score = flipped ? [ev.sha, ev.shh] : [ev.shh, ev.sha];
+          feed.finals["pen:" + m.id] = pen;
+        }
       }
     }
 
