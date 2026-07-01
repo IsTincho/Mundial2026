@@ -65,6 +65,24 @@ export const CODE: Record<string, string> = {
   "Inglaterra": "gb-eng", "Croacia": "hr", "Panamá": "pa", "Ghana": "gh",
 };
 
+// Color representativo (dominante de bandera) por equipo. Se usa para pintar el
+// "camino al campeón": cuando una selección gana un cruce, el tramo que recorre
+// se ilumina con SU color, como en el póster. Fallback plateado si falta.
+export const TEAM_COLOR: Record<string, string> = {
+  "México": "#0A7A46", "Corea del Sur": "#C60C30", "Sudáfrica": "#007A4D", "Chequia": "#1E6BC6",
+  "Suiza": "#E1352C", "Canadá": "#E1352C", "Qatar": "#8A1538", "Bosnia": "#2A5CD8",
+  "Brasil": "#FEDD00", "Marruecos": "#12924F", "Escocia": "#2472C8", "Haití": "#2A3FC8",
+  "EE.UU.": "#3A5BC7", "Turquía": "#E30A17", "Australia": "#FFCD00", "Paraguay": "#E1352C",
+  "Alemania": "#E60000", "Ecuador": "#FFD100", "Costa de Marfil": "#FF8200", "Curazao": "#2A5CD8",
+  "Países Bajos": "#F36C21", "Japón": "#D6002D", "Suecia": "#1E7ABE", "Túnez": "#E70013",
+  "Bélgica": "#F7D530", "Irán": "#2AA84A", "Egipto": "#D81E2C", "Nueva Zelanda": "#2A5CD8",
+  "España": "#D2172C", "Uruguay": "#2A6FE0", "Arabia Saudita": "#0A8C46", "Cabo Verde": "#2A5CD8",
+  "Francia": "#2761C4", "Senegal": "#12924F", "Noruega": "#D42B45", "Irak": "#D81E2C",
+  "Argentina": "#5EA9E6", "Austria": "#ED2939", "Argelia": "#12924F", "Jordania": "#0A8C46",
+  "Portugal": "#E12A1C", "Colombia": "#FCD116", "RD Congo": "#2AA0DA", "Uzbekistán": "#1AA8C4",
+  "Inglaterra": "#E23A47", "Croacia": "#E1352C", "Panamá": "#2A6FE0", "Ghana": "#12924F",
+};
+
 type RawMatch = Omit<Match, "id" | "n">;
 
 const RAW: RawMatch[] = [

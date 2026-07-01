@@ -343,19 +343,27 @@ export interface RoadLeaf extends RoadPoint {
   q: Qualifier | null;
   advanced: boolean; // ganó su cruce de 16avos (resultado real)
   chain: number[]; // partidos desde su entrada hasta la Final
+  angle: number; // ángulo polar (rad) de la hoja en el anillo
 }
 export interface RoadNode extends RoadPoint {
   n: number;
   round: number; // 0..4
   winner: Qualifier | null; // ganador REAL del cruce (o null si no se definió)
+  angle: number; // ángulo polar (rad) del nodo
 }
+// Cada tramo es un conector ORTOGONAL (codo a 90°): baja radialmente desde el
+// hijo hasta el radio del padre y luego gira por un ARCO tangencial hasta el
+// nodo padre. Se guarda la geometría polar y el componente arma el path SVG.
 export interface RoadLink {
-  x1: number; y1: number; x2: number; y2: number;
   parentN: number; // cruce del nodo padre
   childN?: number; // hijo = otro cruce
   childKey?: string; // hijo = una bandera (hoja)
-  toCenter?: boolean; // tramo Final → copa
+  toCenter?: boolean; // tramo Final → copa (radial puro)
   round: number; // ronda del nodo padre (0..4)
+  ca: number; // ángulo del hijo
+  cr: number; // radio del hijo (normalizado, 0..0.5)
+  pa: number; // ángulo del padre
+  pr: number; // radio del padre (normalizado)
 }
 export interface ChampionRoad {
   leaves: RoadLeaf[];
@@ -413,6 +421,7 @@ export function championRoad(
         q,
         advanced: (tie.adv ?? null) === side,
         chain: chainOf(n),
+        angle,
       });
       return angle;
     };
@@ -421,38 +430,40 @@ export function championRoad(
     const bAngle = child(def.b, "b");
     const angle = (aAngle + bAngle) / 2;
     const p = polar(angle, NODE_RADIUS[round]);
-    nodeByN.set(n, { ...p, n, round, winner: winnerOf(n) });
+    nodeByN.set(n, { ...p, n, round, winner: winnerOf(n), angle });
     return angle;
   };
   place(104);
 
-  // Tramos: cada nodo se une a sus dos hijos (nodo o bandera) y la Final al centro.
+  // Tramos ortogonales: cada hijo baja radialmente al radio del padre y gira por
+  // un arco tangencial hasta el nodo padre (codos a 90°). La Final va al centro.
   const links: RoadLink[] = [];
   for (const def of ALL_DEFS) {
     const node = nodeByN.get(def.n)!;
+    const pr = NODE_RADIUS[ROUND_OF[def.n]];
     const linkTo = (slot: Slot, side: "a" | "b") => {
       if (slot.kind === "winner") {
         const target = nodeByN.get(slot.match)!;
         links.push({
-          x1: node.x, y1: node.y, x2: target.x, y2: target.y,
           parentN: def.n, childN: slot.match, round: ROUND_OF[def.n],
+          ca: target.angle, cr: NODE_RADIUS[ROUND_OF[slot.match]], pa: node.angle, pr,
         });
       } else {
         const leaf = leaves.find((l) => l.n === def.n && l.side === side)!;
         links.push({
-          x1: node.x, y1: node.y, x2: leaf.x, y2: leaf.y,
           parentN: def.n, childKey: leaf.key, round: ROUND_OF[def.n],
+          ca: leaf.angle, cr: LEAF_RADIUS, pa: node.angle, pr,
         });
       }
     };
     linkTo(def.a, "a");
     linkTo(def.b, "b");
   }
-  // Final → copa (centro).
+  // Final → copa (centro): radial puro.
   const finalNode = nodeByN.get(104)!;
   links.push({
-    x1: finalNode.x, y1: finalNode.y, x2: 0.5, y2: 0.5,
     parentN: 104, toCenter: true, round: 4,
+    ca: finalNode.angle, cr: NODE_RADIUS[4], pa: finalNode.angle, pr: 0,
   });
 
   return { leaves, nodes: [...nodeByN.values()], links, champion };
