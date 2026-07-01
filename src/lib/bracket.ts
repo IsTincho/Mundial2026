@@ -159,11 +159,15 @@ function assignThirds(
 }
 
 // Cómo se decide quién avanza en cada cruce:
-//  - "model": favorito del modelo (proyección; lo usa el fixture de eliminatorias).
+//  - "model": favorito del modelo (proyección pura).
 //  - "result": SOLO avanza el que ganó de verdad (resultado real cargado). Si el
 //    partido no se jugó/empató, el slot queda vacío. Es lo que usa el camino al
 //    campeón: los países avanzan conforme ganan, no por pronóstico.
-export type AdvanceMode = "model" | "result";
+//  - "auto": híbrido para el fixture de eliminatorias. Si el cruce ya se jugó,
+//    avanza el ganador REAL (incl. penales); si todavía no, proyecta el favorito
+//    del modelo. Así los "Próximos" reflejan los resultados ya cargados (un
+//    eliminado no sigue apareciendo en rondas siguientes).
+export type AdvanceMode = "model" | "result" | "auto";
 
 // Ganador real de un cruce de eliminatorias por su resultado cargado (id "KO-n").
 // En knockout no puede quedar empate: si los 90'/120' terminan igualados, decide
@@ -278,10 +282,10 @@ export function buildBracket(
     for (const d of r.defs) {
       const a = resolve(d.a, d.n, winners);
       const b = resolve(d.b, d.n, winners);
+      const real = advance === "model" ? null : pickAdvResult(d.n, a, b, results);
+      // "result": solo real. "auto": real si se jugó, si no el modelo. "model": modelo.
       const adv =
-        advance === "result"
-          ? pickAdvResult(d.n, a, b, results)
-          : pickAdv(a, b, ratings);
+        advance === "result" ? real : (real ?? pickAdv(a, b, ratings));
       ties.push({ round: r.name, n: d.n, a, b, adv });
       winners[d.n] = adv === "b" ? b : adv === "a" ? a : null;
     }

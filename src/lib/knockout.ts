@@ -33,7 +33,10 @@ export function buildKnockout(
   results: Results,
   ratings: Ratings,
 ): Match[] {
-  const rounds = buildBracket(groups, matches, results);
+  // "auto": los cruces ya jugados avanzan al ganador real (incl. penales); los
+  // que faltan se proyectan con el modelo. Así los "Próximos" se actualizan y un
+  // equipo eliminado deja de aparecer en las rondas siguientes.
+  const rounds = buildBracket(groups, matches, results, "auto");
   const out: Match[] = [];
 
   for (const r of rounds) {
