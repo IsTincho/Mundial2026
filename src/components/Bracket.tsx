@@ -112,8 +112,27 @@ function ChampionRoad({
 
   // viewBox 1000×1000 para las líneas; las banderas son HTML posicionado encima.
   const V = 1000;
+  const CTR = V / 2;
   const pct = (v: number) => `${v * 100}%`;
   const champion = road.champion;
+
+  // Punto en coordenadas del viewBox desde (ángulo, radio normalizado 0..0.5).
+  const pt = (ang: number, r: number): [number, number] => [
+    CTR + r * V * Math.cos(ang),
+    CTR + r * V * Math.sin(ang),
+  ];
+  // Path de un tramo ORTOGONAL: baja radialmente desde el hijo hasta el radio del
+  // padre y gira por un arco tangencial (radio = radio del padre) hasta el nodo
+  // padre → codos a 90°. El tramo a la copa es radial puro hasta el centro.
+  const linkPath = (l: (typeof road.links)[number]): string => {
+    const [cx, cy] = pt(l.ca, l.cr);
+    if (l.toCenter) return `M ${cx} ${cy} L ${CTR} ${CTR}`;
+    const [kx, ky] = pt(l.ca, l.pr); // codo: ángulo del hijo, radio del padre
+    const [px, py] = pt(l.pa, l.pr); // nodo padre sobre el arco
+    const rr = l.pr * V;
+    const sweep = l.pa > l.ca ? 1 : 0;
+    return `M ${cx} ${cy} L ${kx} ${ky} A ${rr} ${rr} 0 0 ${sweep} ${px} ${py}`;
+  };
 
   return (
     <div
@@ -143,10 +162,9 @@ function ChampionRoad({
         {/* Tramos: 1) neutros, 2) rutas ganadoras en color de equipo, 3) camino elegido en oro */}
         {road.links.map((l, i) =>
           linkGold(l) || linkWinColor(l) ? null : (
-            <line
+            <path
               key={"n" + i}
-              x1={l.x1 * V} y1={l.y1 * V}
-              x2={l.x2 * V} y2={l.y2 * V}
+              d={linkPath(l)}
               className={"cr-link" + (sel ? " dim" : "")}
             />
           ),
@@ -154,10 +172,9 @@ function ChampionRoad({
         {road.links.map((l, i) => {
           const c = linkWinColor(l);
           return c && !linkGold(l) ? (
-            <line
+            <path
               key={"w" + i}
-              x1={l.x1 * V} y1={l.y1 * V}
-              x2={l.x2 * V} y2={l.y2 * V}
+              d={linkPath(l)}
               className={"cr-link win" + (sel ? " dim" : "")}
               style={{ stroke: c }}
             />
@@ -165,10 +182,9 @@ function ChampionRoad({
         })}
         {road.links.map((l, i) =>
           linkGold(l) ? (
-            <line
+            <path
               key={"p" + i}
-              x1={l.x1 * V} y1={l.y1 * V}
-              x2={l.x2 * V} y2={l.y2 * V}
+              d={linkPath(l)}
               className="cr-link gold"
             />
           ) : null,
